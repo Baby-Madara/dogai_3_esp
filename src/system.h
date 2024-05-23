@@ -15,8 +15,11 @@
 
 
 
-// sda 21     -     scl 22
+// sda1 21     -     scl1 22
 
+
+#define SDA_2    18 
+#define SCL_2    19
 
 
 
