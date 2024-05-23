@@ -1,14 +1,9 @@
 #include <system.h>
 #include <robotics_math.h>
-
-
+#include <ArduinoJson.h>
 
 TwoWire servoDriverWire = TwoWire(1); // Use I2C bus 0
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40, servoDriverWire);
-
-
-
-
 
 /////////////////////////////////////// Webpage //////////////////////////////////////////////
 
@@ -28,11 +23,15 @@ WebSocketsServer webSocketPhone(81);
 WebSocketsServer webSocketPython(82);
 
 
+void parseJsonData(char *jsonString);
+
+
 // HTML page (minified for brevity)
 const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
     <html>
     <head>
-      <title>ESP32 Control</title>
+    <!--  <title>ESP32 Control</title>  -->
+      <title>Doggo</title>
       <style>
         body { 
           font-family: Arial, sans-serif; 
@@ -139,7 +138,7 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
             if (socket.readyState === WebSocket.OPEN) {
               socket.send(JSON.stringify(logData));
             }
-          }, 100);
+          }, 150);
         }
     
         function drawImage(byteArray) {
@@ -214,20 +213,20 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
         function updateLogData(joystickIndex, x, y) {
           switch (joystickIndex) {
             case 1:
-              logData.vx = x;
-              logData.vy = y;
+              logData.vx = x; //.toFixed(3);
+              logData.vy = y; //.toFixed(3);
               break;
             case 2:
-              logData.R1 = x;
-              logData.P1 = y;
+              logData.R1 = x; //.toFixed(3);
+              logData.P1 = y; //.toFixed(3);
               break;
             case 3:
-              logData.R2 = x;
-              logData.P2 = y;
+              logData.R2 = x; //.toFixed(3);
+              logData.P2 = y; //.toFixed(3);
               break;
             case 4:
-              logData.X = x;
-              logData.Y = y;
+              logData.X = x; //.toFixed(3);
+              logData.Y = y; //.toFixed(3);
               break;
           }
           updateLogDisplay();
@@ -269,7 +268,7 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
         </script>
 </head>
 <body onload="init()">
-  <h1 class="title">ESP32 Control</h1>
+  <h1 class="title">Doggo</h1>
   <canvas id="photoCanvas" width="300" height="200" class="image"></canvas>
   <div class="log data">
     <table>
@@ -342,8 +341,9 @@ void webSocketEventPhone(uint8_t num, WStype_t type, uint8_t *payload, size_t le
 {
     if (type == WStype_TEXT)
     {
-        Serial.printf("[%u] get Text: %s\n", num, payload);
-        // Handle incoming text data from WebSocket
+        // Serial.printf("[%u] get Text: %s\n", num, payload);
+        parseJsonData((char*)payload);
+
     }
 }
 
@@ -362,16 +362,75 @@ void webSocketEventPython(uint8_t num, WStype_t type, uint8_t *payload, size_t l
 }
 
 
+GaitManager gaitManager;
 
 
+float vx_vy_wz      [3] = {0};
+float rpy1          [3] = {0};
+float rpy2          [3] = {0};
+float xyz_translate [3] = {0};
 
-float xyz_cmd_array[4][3];
+void parseJsonData(char *jsonString)
+{
+    // Allocate the JSON document
+    // This is a good practice to avoid heap fragmentation.
+    // <512>
+    JsonDocument doc;
 
+    // Deserialize the JSON document
+    DeserializationError error = deserializeJson(doc, jsonString);
+    if (error)
+    {
+        Serial.print("deserializeJson() failed: ");
+        Serial.println(error.c_str());
+        return;
+    }
 
+    // Extract values and save them into variables
+    vx_vy_wz[0] = MAP(doc["vx"].as<float>(), 0, 100.0, 0.0, 0.15);
+    vx_vy_wz[1] = MAP(doc["vy"].as<float>(), 0, 100.0, 0.0, 0.15);
+    vx_vy_wz[2] = MAP(doc["vz"].as<float>(), 0, 100.0, 0.0, 0.15);
 
+    rpy1[0] = MAP(doc["R1"].as<float>(), 0, 100.0, 0, 0.6);
+    rpy1[1] = MAP(doc["P1"].as<float>(), 0, 100.0, 0, 0.6);
+    rpy1[2] = MAP(doc["Y1"].as<float>(), 0, 100.0, 0, 0.6);
 
+    rpy2[0] =  MAP(doc["R2"].as<float>(), 0, 100.0, 0, 0.6);
+    rpy2[1] =  MAP(doc["P2"].as<float>(), 0, 100.0, 0, 0.6);
+    rpy2[2] =  MAP(doc["Y2"].as<float>(), 0, 100.0, 0, 0.6);
+    
+    xyz_translate[0] = MAP(doc["X"].as<float>(), 0, 100.0, 0.0, 0.15);
+    xyz_translate[1] = MAP(doc["Y"].as<float>(), 0, 100.0, 0.0, 0.15);
+    xyz_translate[2] = MAP(doc["Z"].as<float>(), 0, 100.0, 0.0, 0.15)+0.2;
+    
+    gaitManager.update_commands(vx_vy_wz, rpy1, rpy2, xyz_translate);
 
+    // Print values to verify
+    Serial.println("");
+    Serial.printf("vx: %f, vy: %f, vz: %f\n", vx_vy_wz[0], vx_vy_wz[1], vx_vy_wz[2]);
+    Serial.printf("R1: %f, P1: %f, Y1: %f\n", rpy1[0], rpy1[1], rpy1[2]);
+    Serial.printf("R2: %f, P2: %f, Y2: %f\n", rpy2[0], rpy2[1], rpy2[2]);
+    Serial.printf("X: %f, Y: %f, Z: %f\n", xyz_translate[0], xyz_translate[1], xyz_translate[2]);
+    Serial.println("");
+}
 
+float Xbs = 0.2044;
+float Ybs = 0.1;
+float Zbs = 0.0;
+float Ysl = -0.071;
+float Xlf = 0.2;
+float Xfp = 0.2;
+
+float xyz_cmd_array[4][3]   = {{0, 0, 0}};
+float theta_cmd_array[4][3] = {{0, 0, 0}};
+
+Palm palms_ik[4] = {
+    //     Xbs,    Ybs,      Zbs,    Ysl,     Xlf,               Xfp              Xsl
+    Palm(  Xbs,   -Ybs,      Zbs,    Ysl,     Xlf,               Xfp),
+    Palm(  Xbs,    Ybs,      Zbs,   -Ysl,     Xlf,               Xfp),
+    Palm( -Xbs,   -Ybs,      Zbs,    Ysl,     Xlf,               Xfp),
+    Palm( -Xbs,    Ybs,      Zbs,   -Ysl,     Xlf,               Xfp)
+};
 
 
 /////////////////////////////////////////////      RTOS     /////////////////////////////////////////////
@@ -479,7 +538,7 @@ void Task1_WiFi_comm(void *pvParameters)
     Serial.println(WiFi.localIP());
 
     // Starting the web server and WebSocket server
-    server.on("/", handleRoot);
+    server.on("/", HTTP_GET, handleRoot);
     server.begin();
     webSocketPhone.begin();
     webSocketPython.begin();
@@ -488,11 +547,14 @@ void Task1_WiFi_comm(void *pvParameters)
     webSocketPython.onEvent(webSocketEventPython);
 
     // Start mDNS with the hostname
-    if (!MDNS.begin("doggo3"))
-    {
-        Serial.println("Error setting up MDNS responder!");
-    }
-    Serial.println("mDNS responder started");
+    // if (!MDNS.begin("doggo3"))
+    // {
+    //     Serial.println("Error setting up MDNS responder!");
+    // }
+    // Serial.println("mDNS responder started");
+    // MDNS.addService("http", "tcp", 80);
+    // MDNS.addServiceTxt("http", "tcp", "version", "1.0");
+
 
     while (1)
     {
@@ -512,7 +574,7 @@ void Task2_controller(void *pvParameters)
     while (1)
     {
 
-        vTaskDelay(1);
+        vTaskDelay(10);
     }
 }
 
@@ -523,48 +585,39 @@ void Task3_gait_IK(void *pvParameters)
     pwm.begin();
     pwm.setOscillatorFrequency(26600000); // it is something between 23 to 27MHz (needed to be calibrated  --> calibration 26600000Hz)
     pwm.setPWMFreq(50);                   // of the output PWM signal from channels (for each servo)
-    GaitManager gaitManager;
-    
+    // GaitManager gaitManager;
+
     for (int servo_num = 0; servo_num < 14; servo_num++)
     {
         joints[servo_num].writeAngleDirect(jointDefault[servo_num]);
-        // vTaskDelay(100);
     }
-
+    
+    
     // loop:
     while (1)
     {
-        
+        // gait
         gaitManager.loop(xyz_cmd_array);
-        cmd_angles[0] = -90;
-        for (int servo_num = 0; servo_num < 14; servo_num++)
+        
+        // ik (in degrees)
+        for (int i = 0; i < 4; i++)
+        {   palms_ik[i].ikCalc(xyz_cmd_array[i], theta_cmd_array[i]);   }
+        
+        vTaskDelay(10);
+        
+        
+        // thetas to pwm_driver (in degrees)
+        for (int leg_num = 0; leg_num < 4; leg_num++)
         {
-            joints[servo_num].writeAngleDirect(cmd_angles[servo_num]);
-            // Serial.print(joints[0].angleCmd);
-            // Serial.print("\t");
-            // Serial.println(joints[0].calibratedSignal);
+            for (int joint_num = 0; joint_num < 3; joint_num++)
+            {
+                joints[leg_num*3 + joint_num].writeAngleDirect(theta_cmd_array[leg_num][joint_num]);
+                // Serial.print(theta_cmd_array[leg_num][joint_num] +  String("\t"));
+            }
+            // Serial.println("");
         }
-        vTaskDelay(50);
-
-        // cmd_angles[0] = 0;
-        // for (int servo_num = 0; servo_num < 14; servo_num++)
-        // {
-        //     joints[servo_num].writeAngleDirect(cmd_angles[servo_num]);
-        //     Serial.print(joints[0].angleCmd);
-        //     Serial.print("\t");
-        //     Serial.println(joints[0].calibratedSignal);
-        // }
-        // vTaskDelay(500);
-        // cmd_angles[0] = 80;
-        // for (int servo_num = 0; servo_num < 14; servo_num++)
-        // {
-        //     joints[servo_num].writeAngleDirect(cmd_angles[servo_num]);
-        //     Serial.print(joints[0].angleCmd);
-        //     Serial.print("\t");
-        //     Serial.println(joints[0].calibratedSignal);
-        // }
-        // vTaskDelay(500);
-    
+        vTaskDelay(10);
+        
     }
 }
 
@@ -584,9 +637,8 @@ void Task4_observer(void *pvParameters)
     while (1)
     {
         // myMPU.updateOrientation();
-        OrientationQuaternion = myMPU.getOrientationQuaternion();
-
-        vTaskDelay(1);
+        // OrientationQuaternion = myMPU.getOrientationQuaternion();
+        vTaskDelay(10);
     }
 }
 
@@ -598,15 +650,15 @@ void Task5_Serial(void *pvParameters)
     while (1)
     {
         // Print remaining stack size
-        UBaseType_t remainingStack = uxTaskGetStackHighWaterMark(NULL);
+        // UBaseType_t remainingStack = uxTaskGetStackHighWaterMark(NULL);
         // Serial.print("Remaining stack size: ");
         // Serial.println(remainingStack);
         // Serial.println("Hello " + String(i));
 
-        i++;
+        // i++;
         vTaskDelay(200); // Wait for 1 second
-        // Serial.println(String(OrientationQuaternion.w) + String(" , ") + String(OrientationQuaternion.x) + String(" , ") + String(OrientationQuaternion.y) + String(" , ") + String(OrientationQuaternion.z));
-        // vTaskDelay(1000); // Wait for 1 second
+                         // Serial.println(String(OrientationQuaternion.w) + String(" , ") + String(OrientationQuaternion.x) + String(" , ") + String(OrientationQuaternion.y) + String(" , ") + String(OrientationQuaternion.z));
+                         // vTaskDelay(1000); // Wait for 1 second
     }
 }
 

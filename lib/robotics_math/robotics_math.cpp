@@ -6,7 +6,8 @@
 Palm::Palm(float Xbs, float Ybs, float Zbs, float Ysl, float Xlf, float Xfp)
     :        Xbs(Xbs),  Ybs(Ybs),  Zbs(Zbs),  Ysl(Ysl),  Xlf(Xlf),  Xfp(Xfp) {}
 
-std::vector<float> Palm::ikCalc(const std::vector<float>& goalVector)
+// std::vector<float> Palm::ikCalc(const std::vector<float>& goalVector)
+void Palm::ikCalc(float goalVector[3], float thetas_array[3])
 {
     float X_goal = goalVector[0];
     float Y_goal = goalVector[1];
@@ -33,8 +34,17 @@ std::vector<float> Palm::ikCalc(const std::vector<float>& goalVector)
         thetaF = atan2(sqrt(1 - pow(D, 2)), D);
         thetaL = atan2((X_goal - Xbs), sqrt(pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2) - pow(Ysl, 2))) - atan2(Xfp * sin(thetaF), Xlf + Xfp * cos(thetaF));
     }
+    
+    thetaS = thetaS*(180.0/PI);
+    thetaL = thetaL*(180.0/PI);
+    thetaF = thetaF*(180.0/PI);
+    
+    thetas_array[0] = thetaS;
+    thetas_array[1] = thetaL;
+    thetas_array[2] = thetaF;
+    
 
-    return {thetaS, thetaL, thetaF};
+    // return {thetaS, thetaL, thetaF};
 }
 
 
@@ -263,7 +273,7 @@ GaitManager::GaitManager(float leg_Xf,   float leg_Xb,  float leg_Y,     float z
     legs_curves_radii       = Vector4f::Zero();
     legs_speeds             = Vector4f::Zero();
     palms_cmd               = MatrixXf::Zero(4, 3);
-    vx_vy_wz                = Vector3f(0.1, 0.0, 0.0);
+    vx_vy_wz                = Vector3f(0.0, 0.0, 0.0);
     horizontal_rotation_rpy = Vector3f::Zero();
     inclined_rotation_rpy   = Vector3f::Zero();
     legs_Xf_Xb_Y            = Vector3f(leg_Xf, leg_Xb, leg_Y);
@@ -272,13 +282,23 @@ GaitManager::GaitManager(float leg_Xf,   float leg_Xb,  float leg_Y,     float z
 }
 
 
-void GaitManager::update_commands()
+void GaitManager::update_commands(float vx_vy_wz_[3], float rpy1_[3], float rpy2_[3], float trans_xyz_[3])
 {
-    vx_vy_wz;
-    horizontal_rotation_rpy;
-    inclined_rotation_rpy;
-    // translation_xyz;
+    vx_vy_wz[0] = vx_vy_wz_[0];
+    vx_vy_wz[1] = vx_vy_wz_[1];
+    vx_vy_wz[2] = vx_vy_wz_[2];
+
+    horizontal_rotation_rpy[0] = rpy1_[0];
+    horizontal_rotation_rpy[2] = rpy1_[1];
+    horizontal_rotation_rpy[1] = rpy1_[2];
+
+    inclined_rotation_rpy[0] = rpy2_[0];
+    inclined_rotation_rpy[1] = rpy2_[1];
+    inclined_rotation_rpy[2] = rpy2_[2];
     
+    x_position = trans_xyz_[0];
+    y_position = trans_xyz_[1];
+    z_height   = trans_xyz_[2];
     
 }
 
@@ -354,11 +374,11 @@ void GaitManager::publishing_routine(float xyz_cmd_array[4][3])
             xyz_cmd_array[i][j] = palms_cmd(i, j);
             
             
-            Serial.print(palms_cmd(i, j));
-            Serial.print(j == palms_cmd.cols() - 1 ? "\n" : ", ");
+            // Serial.print(palms_cmd(i, j));
+            // Serial.print(j == palms_cmd.cols() - 1 ? "\n" : ", ");
         }
     }
-    Serial.println("");
+    // Serial.println("");
 }
 
 void GaitManager::loop(float xyz_cmd_array[4][3])
@@ -372,7 +392,7 @@ void GaitManager::loop(float xyz_cmd_array[4][3])
 
 // void setup()
 // {
-//     Serial.begin(115200);
+    // Serial.begin(115200);
 // }
 // Matrix4f GaitManager::translation_matrix(float x, float y, float z) {
 //     Matrix4f mat = Matrix4f::Identity();

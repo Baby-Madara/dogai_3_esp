@@ -1,7 +1,8 @@
 <!DOCTYPE HTML>
     <html>
     <head>
-      <title>ESP32 Control</title>
+    <!--  <title>ESP32 Control</title>  -->
+      <title>Doggo</title>
       <style>
         body { 
           font-family: Arial, sans-serif; 
@@ -108,7 +109,7 @@
             if (socket.readyState === WebSocket.OPEN) {
               socket.send(JSON.stringify(logData));
             }
-          }, 100);
+          }, 150);
         }
     
         function drawImage(byteArray) {
@@ -183,20 +184,20 @@
         function updateLogData(joystickIndex, x, y) {
           switch (joystickIndex) {
             case 1:
-              logData.vx = x;
-              logData.vy = y;
+              logData.vx = x; //.toFixed(3);
+              logData.vy = y; //.toFixed(3);
               break;
             case 2:
-              logData.R1 = x;
-              logData.P1 = y;
+              logData.R1 = x; //.toFixed(3);
+              logData.P1 = y; //.toFixed(3);
               break;
             case 3:
-              logData.R2 = x;
-              logData.P2 = y;
+              logData.R2 = x; //.toFixed(3);
+              logData.P2 = y; //.toFixed(3);
               break;
             case 4:
-              logData.X = x;
-              logData.Y = y;
+              logData.X = x; //.toFixed(3);
+              logData.Y = y; //.toFixed(3);
               break;
           }
           updateLogDisplay();
@@ -238,7 +239,7 @@
         </script>
 </head>
 <body onload="init()">
-  <h1 class="title">ESP32 Control</h1>
+  <h1 class="title">Doggo</h1>
   <canvas id="photoCanvas" width="300" height="200" class="image"></canvas>
   <div class="log data">
     <table>

@@ -34,21 +34,6 @@
 
 
 
-class IK{
-
-};
-
-class tf{
-
-};
-
-
-
-
-
-
-
-
 
 // Function prototypes
 void Task1_WiFi_comm  (void *pvParameters);
@@ -74,6 +59,17 @@ extern TaskHandle_t Task3_Handle;
 extern TaskHandle_t Task4_Handle;
 extern TaskHandle_t Task5_Handle;
 extern TaskHandle_t Task6_Handle;
+
+
+
+
+
+
+
+
+
+
+
 
 
 
