@@ -17,10 +17,15 @@
           display: grid;
           grid-template-columns: 1fr 2fr 1fr;
           align-items: center;
+          place-items: center;
           gap: 20px;
         }
         img { 
+          justify-self: center;
+          align-self: center;
           margin: 0 auto; 
+          grid-column: span 3;
+
         }
         .joystick { 
           margin: 0 auto; 

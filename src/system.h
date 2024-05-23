@@ -13,6 +13,15 @@
 #include <JointServo.h>
 #include <palmSensor.h>
 
+#include <WiFi.h>
+#include <ESPmDNS.h>
+#include <WebServer.h>
+#include <WebSocketsServer.h>
+
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+
+
 
 
 // sda1 21     -     scl1 22
@@ -93,37 +102,52 @@ extern Quaternion accelQuaternion;
 
 
 
+
 extern double palmStates[4];
-
 extern double jointStates[14];
-
 extern double jointCmd[14];
-
 extern int servoPinList[14];
 extern int potPinList[14];
-
-
-
-
 extern double jointDirList[14];
 extern double jointOffsetList[14];
-
-
-
 extern double jointLimitsLow[14];
-
 extern double jointLimitsHigh[14];
-
 extern double jointDefault[14];
 
 
 
 
+
+
 extern JointServo joints[14];
-
 extern palmSensor palms[4];
-
 extern double cmd_angles[14];
+
+
+
+
+
+
+
+void wifiTask(void *parameter);
+void randomImageTask(void *parameter);
+void handleRoot();
+void webSocketEventPhone(uint8_t num, WStype_t type, uint8_t *payload, size_t length);
+void webSocketEventPython(uint8_t num, WStype_t type, uint8_t *payload, size_t length);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
