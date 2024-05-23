@@ -94,10 +94,10 @@ extern MPU6050_Custom myMPU;
 // MPU6050_Custom myMPU(interpolDataOmegaX, interpolDataOmegaY, interpolDataOmegaZ, interpolDataAccX, interpolDataAccY, interpolDataAccZ);
 // MPU6050_Custom myMPU(3, MPU6050_RANGE_250_DEG, MPU6050_RANGE_2_G,  MPU6050_BAND_44_HZ,  NULL,  NULL,  100,  0,  0.98,  3);
 
-extern Quaternion OrientationQuaternion;
-extern Quaternion OmegaQuaternion;
-extern Quaternion alphaQuaternion;
-extern Quaternion accelQuaternion;
+extern Quaternion_ OrientationQuaternion;
+extern Quaternion_ OmegaQuaternion;
+extern Quaternion_ alphaQuaternion;
+extern Quaternion_ accelQuaternion;
 
 
 

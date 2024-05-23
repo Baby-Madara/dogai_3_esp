@@ -15,22 +15,22 @@ void matrixMultiplier(double m1[4][4], double m2[4][4], double mResult[4][4]);
 void matrix_transpose(int m, int n, double matrix[4][4], double transpose[4][4]);
 
 
-class Quaternion {
+class Quaternion_ {
 public:
     double w, x, y, z;
 
-    Quaternion(double w = 1, double x = 0, double y = 0, double z = 0);
+    Quaternion_(double w = 1, double x = 0, double y = 0, double z = 0);
 
     void normalize();
-    static Quaternion fromEuler(double roll, double pitch, double yaw);
-    static Quaternion slerp(Quaternion &q1, Quaternion &q2, double alpha);
-    static Quaternion quat_calc(double dx, double dy, double dz);
+    static Quaternion_ fromEuler(double roll, double pitch, double yaw);
+    static Quaternion_ slerp(Quaternion_ &q1, Quaternion_ &q2, double alpha);
+    static Quaternion_ quat_calc(double dx, double dy, double dz);
     void toEuler(double &roll, double &pitch, double &yaw);
     void toMatrix(double matrix[4][4], double tx = 0, double ty = 0, double tz = 0);
-    Quaternion conjugate();
-    Quaternion operator%(const Quaternion &q) const;
-    Quaternion operator+(const Quaternion &q) const;
-    Quaternion operator*(double scalar) const;
+    Quaternion_ conjugate();
+    Quaternion_ operator%(const Quaternion_ &q) const;
+    Quaternion_ operator+(const Quaternion_ &q) const;
+    Quaternion_ operator*(double scalar) const;
 };
 
 
@@ -41,7 +41,7 @@ public:
 	
     double alpha;
     double tolerance;
-    Quaternion quatD, quatA, quatC, quatG, accelQuat, velocitioyQuat, positionQuat;
+    Quaternion_ quatD, quatA, quatC, quatG, accelQuat, velocitioyQuat, positionQuat;
 	
     
 	//////////////////////////////////////////////////////////////////////////////////////////
@@ -122,16 +122,16 @@ public:
     bool begin();
     void updateOrientation();
     void toEuler(double &r, double &p, double &y);
-    // Quaternion gyroToQuaternion(double gx, double gy, double gz);
-    Quaternion anglesToQuaternion(double roll, double pitch, double yaw);
+    // Quaternion_ gyroToQuaternion_(double gx, double gy, double gz);
+    Quaternion_ anglesToQuaternion(double roll, double pitch, double yaw);
     void getOrientationAxisGlobal(double &x, double &y, double &z);
-    Quaternion getOrientationQuaternion();
+    Quaternion_ getOrientationQuaternion();
     void getAngularVelocityGlobal(double &gx, double &gy, double &gz);
     void getAngularAccelerationGlobal(double &ax, double &ay, double &az);
     void getLinearAccelerationGlobal(double &ax, double &ay, double &az);
-    void getLinearAccelerationQuaternionGlobal(Quaternion &resultQuat);
+    void getLinearAccelerationQuaternionGlobal(Quaternion_ &resultQuat);
     void getLinearAccelerationLocal(double &ax, double &ay, double &az);
-    void setOrientationQuaternion(Quaternion _quatC);
+    void setOrientationQuaternion(Quaternion_ _quatC);
     void calculate_IMU_error();
 
 // private:

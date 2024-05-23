@@ -58,10 +58,10 @@ void matrix_transpose(int m, int n, double matrix[4][4], double transpose[4][4])
 
 
 // Constructor to initialize the quaternion
-Quaternion::Quaternion(double w, double x, double y, double z) : w(w), x(x), y(y), z(z) {}
+Quaternion_::Quaternion_(double w, double x, double y, double z) : w(w), x(x), y(y), z(z) {}
 
-// Normalize the quaternion
-void Quaternion::normalize() {
+// Normalize the quaternion_
+void Quaternion_::normalize() {
     double norm = sqrt(w * w + x * x + y * y + z * z);
     w /= norm;
     x /= norm;
@@ -69,8 +69,8 @@ void Quaternion::normalize() {
     z /= norm;
 }
 
-// Function to convert Euler angles to Quaternion
-Quaternion Quaternion::fromEuler(double roll, double pitch, double yaw) {
+// Function to convert Euler angles to Quaternion_
+Quaternion_ Quaternion_::fromEuler(double roll, double pitch, double yaw) {
     double cy = cos(yaw * 0.5);
     double sy = sin(yaw * 0.5);
     double cp = cos(pitch * 0.5);
@@ -78,7 +78,7 @@ Quaternion Quaternion::fromEuler(double roll, double pitch, double yaw) {
     double cr = cos(roll * 0.5);
     double sr = sin(roll * 0.5);
 
-    return Quaternion(
+    return Quaternion_(
         cr * cp * cy + sr * sp * sy, // w
         sr * cp * cy - cr * sp * sy, // x
         cr * sp * cy + sr * cp * sy, // y
@@ -87,16 +87,16 @@ Quaternion Quaternion::fromEuler(double roll, double pitch, double yaw) {
 }
 
 // Static method for Spherical Linear Interpolation (SLERP)
-Quaternion Quaternion::slerp(Quaternion &q1, Quaternion &q2, double alpha=0.98) {
-    // Normalize the quaternions
+Quaternion_ Quaternion_::slerp(Quaternion_ &q1, Quaternion_ &q2, double alpha=0.98) {
+    // Normalize the quaternion_s
     q1.normalize();
     q2.normalize();
 
-    // Compute the cosine of the angle between the quaternions
+    // Compute the cosine of the angle between the quaternion_s
     double dot = q1.w * q2.w + q1.x * q2.x + q1.y * q2.y + q1.z * q2.z;
 
-    // If the dot product is negative, the quaternions have opposite handed-ness
-    // and slerp won't take the shorter path. Fix by reversing one quaternion.
+    // If the dot product is negative, the quaternion_s have opposite handed-ness
+    // and slerp won't take the shorter path. Fix by reversing one quaternion_.
     if (dot < 0.0) {
         q2.w = -q2.w;
         q2.x = -q2.x;
@@ -109,7 +109,7 @@ Quaternion Quaternion::slerp(Quaternion &q1, Quaternion &q2, double alpha=0.98) 
     const double DOT_THRESHOLD = 0.9995;
     if (dot > DOT_THRESHOLD) {
         // If the inputs are too close for comfort, linearly interpolate
-        Quaternion result = q1 * (1 - alpha) + q2 * alpha;
+        Quaternion_ result = q1 * (1 - alpha) + q2 * alpha;
         result.normalize();
         return result;
     }
@@ -120,11 +120,11 @@ Quaternion Quaternion::slerp(Quaternion &q1, Quaternion &q2, double alpha=0.98) 
     double sin_theta = sin(theta);
     double sin_theta_0 = sin(theta_0);
 
-    // Compute the two quaternions
+    // Compute the two quaternion_s
     double s0 = cos(theta) - dot * sin_theta / sin_theta_0;
     double s1 = sin_theta / sin_theta_0;
 
-    return Quaternion(
+    return Quaternion_(
         (s0 * q1.w) + (s1 * q2.w),
         (s0 * q1.x) + (s1 * q2.x),
         (s0 * q1.y) + (s1 * q2.y),
@@ -132,7 +132,7 @@ Quaternion Quaternion::slerp(Quaternion &q1, Quaternion &q2, double alpha=0.98) 
     );
 }
 
-Quaternion Quaternion::quat_calc(double dx, double dy, double dz)
+Quaternion_ Quaternion_::quat_calc(double dx, double dy, double dz)
 {
     double angle;
     double kx;
@@ -152,7 +152,7 @@ Quaternion Quaternion::quat_calc(double dx, double dy, double dz)
         kz = 0;
     }
     
-    return Quaternion(
+    return Quaternion_(
         cos(angle/2),
         kx * sin(angle/2),
         ky * sin(angle/2),
@@ -160,8 +160,8 @@ Quaternion Quaternion::quat_calc(double dx, double dy, double dz)
     );
 }
 
-// Function to convert Quaternion to Euler angles
-void Quaternion::toEuler(double &roll, double &pitch, double &yaw) {
+// Function to convert Quaternion_ to Euler angles
+void Quaternion_::toEuler(double &roll, double &pitch, double &yaw) {
     // Roll (x-axis rotation)
     double sinr_cosp = 2 * (w * x + y * z);
     double cosr_cosp = 1 - 2 * (x * x + y * y);
@@ -180,8 +180,8 @@ void Quaternion::toEuler(double &roll, double &pitch, double &yaw) {
     yaw = atan2(siny_cosp, cosy_cosp);
 }
 
-// Function to convert Quaternion to a 4x4 transformation matrix
-void Quaternion::toMatrix(double matrix[4][4], double tx, double ty, double tz) {
+// Function to convert Quaternion_ to a 4x4 transformation matrix
+void Quaternion_::toMatrix(double matrix[4][4], double tx, double ty, double tz) {
     matrix[0][0] = 1 - 2 * y * y - 2 * z * z;
     matrix[0][1] = 2 * x * y - 2 * w * z;
     matrix[0][2] = 2 * x * z + 2 * w * y;
@@ -203,14 +203,14 @@ void Quaternion::toMatrix(double matrix[4][4], double tx, double ty, double tz) 
     matrix[3][3] = 1;
 }
 
-// Add a method to get the conjugate of a quaternion
-Quaternion Quaternion::conjugate() {
-    return Quaternion(w, -x, -y, -z);
+// Add a method to get the conjugate of a quaternion_
+Quaternion_ Quaternion_::conjugate() {
+    return Quaternion_(w, -x, -y, -z);
 }
 
-// Operator overloading for quaternion multiplication
-Quaternion Quaternion::operator%(const Quaternion &q) const {
-    return Quaternion(
+// Operator overloading for quaternion_ multiplication
+Quaternion_ Quaternion_::operator%(const Quaternion_ &q) const {
+    return Quaternion_(
         w*q.w - x*q.x - y*q.y - z*q.z,
         w*q.x + x*q.w + y*q.z - z*q.y,
         w*q.y - x*q.z + y*q.w + z*q.x,
@@ -219,13 +219,13 @@ Quaternion Quaternion::operator%(const Quaternion &q) const {
 }
 
 // Operator overloading for addition
-Quaternion Quaternion::operator+(const Quaternion &q) const {
-    return Quaternion(w + q.w, x + q.x, y + q.y, z + q.z);
+Quaternion_ Quaternion_::operator+(const Quaternion_ &q) const {
+    return Quaternion_(w + q.w, x + q.x, y + q.y, z + q.z);
 }
 
 // Operator overloading for scalar multiplication
-Quaternion Quaternion::operator*(double scalar) const {
-    return Quaternion(w*scalar, x*scalar, y*scalar, z*scalar);
+Quaternion_ Quaternion_::operator*(double scalar) const {
+    return Quaternion_(w*scalar, x*scalar, y*scalar, z*scalar);
 }
 
 
@@ -313,9 +313,9 @@ bool MPU6050_Custom::begin() {
 
     calculate_IMU_error();
     
-    accelQuat      = Quaternion(0, 0, 0, 0);
-    velocitioyQuat = Quaternion(0, 0, 0, 0);
-    positionQuat   = Quaternion(0, 0, 0, 0);
+    accelQuat      = Quaternion_(0, 0, 0, 0);
+    velocitioyQuat = Quaternion_(0, 0, 0, 0);
+    positionQuat   = Quaternion_(0, 0, 0, 0);
     
     return true;
 }
@@ -383,7 +383,7 @@ void MPU6050_Custom::updateOrientation() {
         
         //////////////////////////////////////////////////////////////////////////////////////////////////////////////
         ////////////////////////////////////////         R_ob (gyro)          ////////////////////////////////////////
-        quatD = Quaternion::quat_calc(thetaXdelta, thetaYdelta, thetaZdelta);    				
+        quatD = Quaternion_::quat_calc(thetaXdelta, thetaYdelta, thetaZdelta);    				
         quatG = quatG%quatD;
         quatG.toEuler(rollg, pitchg, yawg);
         // quatG.toMatrix(TF);
@@ -445,22 +445,22 @@ void MPU6050_Custom::updateOrientation() {
 void MPU6050_Custom::toEuler(double &r, double &p, double &y)
 {   quatC.toEuler(r, p, y);   }
 
-// // Convert gyroscope data to quaternion (rad/sec)
-// Quaternion MPU6050_Custom::gyroToQuaternion(double gx, double gy, double gz) {
+// // Convert gyroscope data to quaternion_ (rad/sec)
+// Quaternion_ MPU6050_Custom::gyroToQuaternion_(double gx, double gy, double gz) {
 //     // Convert gyroscope data from degrees per second to radians per second
 //     gx = gx * DEG_TO_RAD;
 //     gy = gy * DEG_TO_RAD;
 //     gz = gz * DEG_TO_RAD;
-//     // Quaternion integration (simple approximation)
+//     // Quaternion_ integration (simple approximation)
 //     double qw = 1;
 //     double qx = gx * dt / 2;
 //     double qy = gy * dt / 2;
 //     double qz = gz * dt / 2;
-//     return Quaternion(qw, qx, qy, qz);
+//     return Quaternion_(qw, qx, qy, qz);
 // }
 
-// Convert roll and pitch angles to quaternion (in rad)
-Quaternion MPU6050_Custom::anglesToQuaternion(double roll, double pitch, double yaw) {
+// Convert roll and pitch angles to quaternion_ (in rad)
+Quaternion_ MPU6050_Custom::anglesToQuaternion(double roll, double pitch, double yaw) {
     // Assuming yaw is zero
     double cy = cos(yaw / 2);
     double sy = sin(yaw / 2);
@@ -469,7 +469,7 @@ Quaternion MPU6050_Custom::anglesToQuaternion(double roll, double pitch, double 
     double cr = cos(roll / 2);
     double sr = sin(roll / 2);
 
-    return Quaternion(
+    return Quaternion_(
         cr * cp * cy + sr * sp * sy, // w
         sr * cp * cy - cr * sp * sy, // x
         cr * sp * cy + sr * cp * sy, // y
@@ -479,7 +479,7 @@ Quaternion MPU6050_Custom::anglesToQuaternion(double roll, double pitch, double 
 
 // Method to get orientation axis in global frame (not used)
 void MPU6050_Custom::getOrientationAxisGlobal(double &x, double &y, double &z) {
-    Quaternion axisX(0, 1, 0, 0);
+    Quaternion_ axisX(0, 1, 0, 0);
     
     axisX = quatC % axisX % quatC.conjugate();
     x = axisX.x;
@@ -487,7 +487,7 @@ void MPU6050_Custom::getOrientationAxisGlobal(double &x, double &y, double &z) {
     z = axisX.z;
 }
 
-Quaternion MPU6050_Custom::getOrientationQuaternion()
+Quaternion_ MPU6050_Custom::getOrientationQuaternion()
 {
     return quatC;
 }
@@ -495,8 +495,8 @@ Quaternion MPU6050_Custom::getOrientationQuaternion()
 // Method to get global angular velocity (rad/sec)
 void MPU6050_Custom::getAngularVelocityGlobal(double &gx, double &gy, double &gz) {
     // Assuming omegaX, omegaY, omegaZ are the local angular velocities
-    Quaternion localOmega(0, omegaX, omegaY, omegaZ);
-    Quaternion globalOmega = quatC % localOmega % quatC.conjugate();
+    Quaternion_ localOmega(0, omegaX, omegaY, omegaZ);
+    Quaternion_ globalOmega = quatC % localOmega % quatC.conjugate();
 
     gx = globalOmega.x;
     gy = globalOmega.y;
@@ -511,8 +511,8 @@ void MPU6050_Custom::getAngularAccelerationGlobal(double &ax, double &ay, double
     double localAz = omegaZd / dt;
 
     // Transform local angular acceleration to global frame
-    Quaternion localAngularAcc(0, localAx, localAy, localAz);
-    Quaternion globalAngularAcc = quatC % localAngularAcc % quatC.conjugate();
+    Quaternion_ localAngularAcc(0, localAx, localAy, localAz);
+    Quaternion_ globalAngularAcc = quatC % localAngularAcc % quatC.conjugate();
 
     ax = globalAngularAcc.x;
     ay = globalAngularAcc.y;
@@ -520,26 +520,26 @@ void MPU6050_Custom::getAngularAccelerationGlobal(double &ax, double &ay, double
 }
 
 // Method to get global linear acceleration (m/sec^2)
-void MPU6050_Custom::getLinearAccelerationQuaternionGlobal(Quaternion &resultQuat) {
+void MPU6050_Custom::getLinearAccelerationQuaternionGlobal(Quaternion_ &resultQuat) {
     // Assuming accX, accY, accZ are the local linear accelerations
-    Quaternion localAcc(0, accX, accY, accZ);
+    Quaternion_ localAcc(0, accX, accY, accZ);
 
     // Rotate the local acceleration vector to the global frame
-    // Quaternion globalAcc = quatC.conjugate() % localAcc % quatC;
-    Quaternion globalAcc = quatC % localAcc % quatC.conjugate();
+    // Quaternion_ globalAcc = quatC.conjugate() % localAcc % quatC;
+    Quaternion_ globalAcc = quatC % localAcc % quatC.conjugate();
     // Serial.println(accErrRange);
     
 
 
     // Gravity vector in the local frame (assuming Z-axis is up)
-    Quaternion globalGravity(0, 0, 0, M_G);
-    // Quaternion globalGravity(0, 0, 0, 0);
+    Quaternion_ globalGravity(0, 0, 0, M_G);
+    // Quaternion_ globalGravity(0, 0, 0, 0);
 
     // Rotate the gravity vector to the global frame
-    // Quaternion globalGravity = quatC % localGravity % quatC.conjugate();
+    // Quaternion_ globalGravity = quatC % localGravity % quatC.conjugate();
 
     // Subtract the gravity component from the global acceleration
-    resultQuat = Quaternion(
+    resultQuat = Quaternion_(
         0,
         (globalAcc.x - globalGravity.x),
         (globalAcc.y - globalGravity.y),
@@ -557,16 +557,16 @@ void MPU6050_Custom::getLinearAccelerationQuaternionGlobal(Quaternion &resultQua
 // Method to get global linear acceleration (m/sec^2)
 void MPU6050_Custom::getLinearAccelerationGlobal(double &ax, double &ay, double &az) {
     // Assuming accX, accY, accZ are the local linear accelerations
-    Quaternion localAcc(0, accX, accY, accZ);
+    Quaternion_ localAcc(0, accX, accY, accZ);
 
     // Rotate the local acceleration vector to the global frame
-    Quaternion globalAcc = quatC % localAcc % quatC.conjugate();
+    Quaternion_ globalAcc = quatC % localAcc % quatC.conjugate();
 
     // Gravity vector in the local frame (assuming Z-axis is up)
-    Quaternion globalGravity(0, 0, 0, M_G);
+    Quaternion_ globalGravity(0, 0, 0, M_G);
 
     // Rotate the gravity vector to the global frame
-    // Quaternion globalGravity = quatC % localGravity % quatC.conjugate();
+    // Quaternion_ globalGravity = quatC % localGravity % quatC.conjugate();
 
     // Subtract the gravity component from the global acceleration
     ax = (globalAcc.x - globalGravity.x);
@@ -577,13 +577,13 @@ void MPU6050_Custom::getLinearAccelerationGlobal(double &ax, double &ay, double 
 // Method to get local linear acceleration (m/sec^2)
 void MPU6050_Custom::getLinearAccelerationLocal(double &ax, double &ay, double &az) {
     // Assuming accX, accY, accZ are the local linear accelerations
-    Quaternion localAcc(0, accX, accY, accZ);
+    Quaternion_ localAcc(0, accX, accY, accZ);
 
     // Gravity vector in the local frame (assuming Z-axis is up)
-    Quaternion globalGravity(0, 0, 0, M_G);
+    Quaternion_ globalGravity(0, 0, 0, M_G);
 
     // Rotate the gravity vector to the global frame
-    Quaternion localGravity = quatC.conjugate() % globalGravity % quatC;
+    Quaternion_ localGravity = quatC.conjugate() % globalGravity % quatC;
 
     // Subtract the gravity component from the global acceleration
     ax = (localAcc.x - localGravity.x);
@@ -591,7 +591,7 @@ void MPU6050_Custom::getLinearAccelerationLocal(double &ax, double &ay, double &
     az = (localAcc.z - localGravity.z);
 }
 
-void MPU6050_Custom::setOrientationQuaternion(Quaternion _quatC)
+void MPU6050_Custom::setOrientationQuaternion(Quaternion_ _quatC)
 {
     quatC = _quatC;
 }
