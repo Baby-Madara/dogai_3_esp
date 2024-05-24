@@ -289,8 +289,8 @@ void GaitManager::update_commands(float vx_vy_wz_[3], float rpy1_[3], float rpy2
     vx_vy_wz[2] = vx_vy_wz_[2];
 
     horizontal_rotation_rpy[0] = rpy1_[0];
-    horizontal_rotation_rpy[2] = rpy1_[1];
-    horizontal_rotation_rpy[1] = rpy1_[2];
+    horizontal_rotation_rpy[1] = rpy1_[1];
+    horizontal_rotation_rpy[2] = rpy1_[2];
 
     inclined_rotation_rpy[0] = rpy2_[0];
     inclined_rotation_rpy[1] = rpy2_[1];

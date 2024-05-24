@@ -108,6 +108,7 @@
           setInterval(() => {
             if (socket.readyState === WebSocket.OPEN) {
               socket.send(JSON.stringify(logData));
+              console.log('hi');
             }
           }, 150);
         }
@@ -127,6 +128,7 @@
         }
     
         function init() {
+          console.log("loaded");
           initWebSocket();
     
           const joysticks = document.querySelectorAll('.joystick');
@@ -238,7 +240,8 @@
         document.addEventListener('DOMContentLoaded', init);
         </script>
 </head>
-<body onload="init()">
+<!-- <body onload="init()"> -->
+<body>
   <h1 class="title">Doggo</h1>
   <canvas id="photoCanvas" width="300" height="200" class="image"></canvas>
   <div class="log data">

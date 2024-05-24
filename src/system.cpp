@@ -137,6 +137,7 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
           setInterval(() => {
             if (socket.readyState === WebSocket.OPEN) {
               socket.send(JSON.stringify(logData));
+              console.log('hi');
             }
           }, 150);
         }
@@ -156,6 +157,7 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
         }
     
         function init() {
+          console.log("loaded");
           initWebSocket();
     
           const joysticks = document.querySelectorAll('.joystick');
@@ -267,7 +269,8 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
         document.addEventListener('DOMContentLoaded', init);
         </script>
 </head>
-<body onload="init()">
+<!-- <body onload="init()"> -->
+<body>
   <h1 class="title">Doggo</h1>
   <canvas id="photoCanvas" width="300" height="200" class="image"></canvas>
   <div class="log data">
@@ -343,7 +346,7 @@ void webSocketEventPhone(uint8_t num, WStype_t type, uint8_t *payload, size_t le
     {
         // Serial.printf("[%u] get Text: %s\n", num, payload);
         parseJsonData((char*)payload);
-
+        
     }
 }
 
@@ -372,45 +375,36 @@ float xyz_translate [3] = {0};
 
 void parseJsonData(char *jsonString)
 {
-    // Allocate the JSON document
-    // This is a good practice to avoid heap fragmentation.
-    // <512>
-    JsonDocument doc;
-
-    // Deserialize the JSON document
-    DeserializationError error = deserializeJson(doc, jsonString);
-    if (error)
-    {
-        Serial.print("deserializeJson() failed: ");
-        Serial.println(error.c_str());
-        return;
-    }
-
-    // Extract values and save them into variables
-    vx_vy_wz[0] = MAP(doc["vx"].as<float>(), 0, 100.0, 0.0, 0.15);
-    vx_vy_wz[1] = MAP(doc["vy"].as<float>(), 0, 100.0, 0.0, 0.15);
-    vx_vy_wz[2] = MAP(doc["vz"].as<float>(), 0, 100.0, 0.0, 0.15);
-
-    rpy1[0] = MAP(doc["R1"].as<float>(), 0, 100.0, 0, 0.6);
-    rpy1[1] = MAP(doc["P1"].as<float>(), 0, 100.0, 0, 0.6);
-    rpy1[2] = MAP(doc["Y1"].as<float>(), 0, 100.0, 0, 0.6);
-
-    rpy2[0] =  MAP(doc["R2"].as<float>(), 0, 100.0, 0, 0.6);
-    rpy2[1] =  MAP(doc["P2"].as<float>(), 0, 100.0, 0, 0.6);
-    rpy2[2] =  MAP(doc["Y2"].as<float>(), 0, 100.0, 0, 0.6);
     
-    xyz_translate[0] = MAP(doc["X"].as<float>(), 0, 100.0, 0.0, 0.15);
-    xyz_translate[1] = MAP(doc["Y"].as<float>(), 0, 100.0, 0.0, 0.15);
-    xyz_translate[2] = MAP(doc["Z"].as<float>(), 0, 100.0, 0.0, 0.15)+0.2;
+    // Helper function to extract a value from the JSON string
+    auto extractValue = [](char *json, const char *key) -> float {
+        char *found = strstr(json, key);
+        if (found) {
+            return atof(found + strlen(key) + 1); // +2 to skip the ": " part
+        }
+        return 0;
+    };
+    // Extract values and save them into variables
+    float vx    = vx_vy_wz[0]      = MAP(extractValue(jsonString, "\"vx\""), 0, 100.0, 0.0, 0.15);
+    float vy    = vx_vy_wz[1]      = MAP(extractValue(jsonString, "\"vy\""), 0, 100.0, 0.0, 0.15);
+    float vz    = vx_vy_wz[2]      = MAP(extractValue(jsonString, "\"vz\""), 0, 100.0, 0.0, 0.15);
+    float R1    = rpy1[0]          = MAP(extractValue(jsonString, "\"R1\""), 0, 100.0, 0, 0.6);
+    float P1    = rpy1[1]          = MAP(extractValue(jsonString, "\"P1\""), 0, 100.0, 0, 0.6);
+    float Y1    = rpy1[2]          = MAP(extractValue(jsonString, "\"Y1\""), 0, 100.0, 0, 0.6);
+    float R2    = rpy2[0]          = MAP(extractValue(jsonString, "\"R2\""), 0, 100.0, 0, 0.6);
+    float P2    = rpy2[1]          = MAP(extractValue(jsonString, "\"P2\""), 0, 100.0, 0, 0.6);
+    float Y2    = rpy2[2]          = MAP(extractValue(jsonString, "\"Y2\""), 0, 100.0, 0, 0.6);
+    float X     = xyz_translate[0] = MAP(extractValue(jsonString, "\"X\""), 0, 100.0, 0.0, 0.15);
+    float Y     = xyz_translate[1] = MAP(extractValue(jsonString, "\"Y\""), 0, 100.0, 0.0, 0.15);
+    float Z     = xyz_translate[2] = MAP(extractValue(jsonString, "\"Z\""), 0, 100.0, 0.0, 0.15)+0.2;
     
     gaitManager.update_commands(vx_vy_wz, rpy1, rpy2, xyz_translate);
-
     // Print values to verify
     Serial.println("");
-    Serial.printf("vx: %f, vy: %f, vz: %f\n", vx_vy_wz[0], vx_vy_wz[1], vx_vy_wz[2]);
-    Serial.printf("R1: %f, P1: %f, Y1: %f\n", rpy1[0], rpy1[1], rpy1[2]);
-    Serial.printf("R2: %f, P2: %f, Y2: %f\n", rpy2[0], rpy2[1], rpy2[2]);
-    Serial.printf("X: %f, Y: %f, Z: %f\n", xyz_translate[0], xyz_translate[1], xyz_translate[2]);
+    Serial.printf("vx: %f, vy: %f, vz: %f\n", vx, vy, vz);
+    Serial.printf("R1: %f, P1: %f, Y1: %f\n", R1, P1, Y1);
+    Serial.printf("R2: %f, P2: %f, Y2: %f\n", R2, P2, Y2);
+    Serial.printf("X: %f, Y: %f, Z: %f\n", X, Y, Z);
     Serial.println("");
 }
 
