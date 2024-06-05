@@ -43,6 +43,8 @@ void Palm::ikCalc(float goalVector[3], float thetas_array[3])
     thetas_array[1] = thetaL;
     thetas_array[2] = thetaF;
     
+    // Serial.println(String("S: ")+String(thetaS)+String("\tL: ")+String(thetaL)+String("\tF: ")+String(thetaF));
+    
 
     // return {thetaS, thetaL, thetaF};
 }
@@ -110,124 +112,88 @@ Matrix4f rotation_z_matrix(float theta)
 }
 
 
+
+
 std::pair<Matrix<float, 3, 1>, bool> compound_bezier(
     float t,
-    float step_time_quarter,
+    float total_step_time,
     float speed,
-    float terminating_stance_to_q_step_ratio,
+    float stance_ratio,
     float phase_shift,
     float z_via,
-    float curving_radius,
-    float swing_curving_to_ssq_ratio,
+    float curve_width_ratio,
     float penetration_depth,
+    float curving_radius,
     float rotation_angle,
-    bool smooth
+    float distance_shift
 )
 {
     Matrix<float, 3, 1> output(0, 0, 0);
-    float step_size_quarter = speed * step_time_quarter;
-    if (step_size_quarter == 0)
-    {
+
+    if (stance_ratio >= 0.95) {
+        stance_ratio = 0.95;
+    }
+
+    float step_size = speed * (total_step_time * stance_ratio);
+    if (step_size == 0) {
         z_via = 0;
     }
 
-    if (terminating_stance_to_q_step_ratio >= 0.4)
-    {
-        terminating_stance_to_q_step_ratio = 0.4;
-    }
-
     float t_local = t + phase_shift;
-    if (t_local > 1) {
+    if (t_local >= 1) {
         t_local -= static_cast<int>(t_local);
     }
 
     bool stance_phase = false;
 
-    float t_1  = step_time_quarter;
-    float t_2  = step_time_quarter;
-    float t_3  = step_time_quarter;
-    float t_4  = t_1 * terminating_stance_to_q_step_ratio;
-    float t_56 = t_1 * (0.5 - terminating_stance_to_q_step_ratio);
-    float t_78 = t_1 * (0.5 - terminating_stance_to_q_step_ratio);
-    float t_9  = t_1 * terminating_stance_to_q_step_ratio;
+    float t_1, t_2, t_3, t_4;
+    t_1 = t_2 = (total_step_time * stance_ratio) / 2;
+    t_3 = t_4 = (total_step_time * (1 - stance_ratio)) / 2;
 
-    float t_sum = t_1 + t_2 + t_3 + t_4 + t_56 + t_78 + t_9;
+    float t_sum = t_1 + t_2 + t_3 + t_4;
 
-    float s_1  = t_1  / t_sum;
-    float s_2  = t_2  / t_sum;
-    float s_3  = t_3  / t_sum;
-    float s_4  = t_4  / t_sum;
-    float s_56 = t_56 / t_sum;
-    float s_78 = t_78 / t_sum;
-    float s_9  = t_9  / t_sum;
+    float s_1 = t_1 / t_sum;
+    float s_2 = t_2 / t_sum;
+    float s_3 = t_3 / t_sum;
+    float s_4 = t_4 / t_sum;
 
-    Matrix<float, 3, 1> p0(  1.5 * step_size_quarter,                                                                     0.0,    0.0                );
-    Matrix<float, 3, 1> p1(  0.5 * step_size_quarter,                                                                     0.0,    -penetration_depth );
-    Matrix<float, 3, 1> p2( -0.5 * step_size_quarter,                                                                     0.0,    -penetration_depth );
-    Matrix<float, 3, 1> p3( -1.5 * step_size_quarter,                                                                     0.0,    0.0                );
-    Matrix<float, 3, 1> p4( -step_size_quarter * (1.5 + terminating_stance_to_q_step_ratio),                              0.0,    0.0                );
-    Matrix<float, 3, 1> p5( -step_size_quarter * (1.5 + terminating_stance_to_q_step_ratio + swing_curving_to_ssq_ratio), 0.0,    z_via              );
-    Matrix<float, 3, 1> p6(  0.0,                                                                                         0.0,    z_via              );
-    Matrix<float, 3, 1> p7(  step_size_quarter * (1.5 + terminating_stance_to_q_step_ratio + swing_curving_to_ssq_ratio), 0.0,    z_via              );
-    Matrix<float, 3, 1> p8(  step_size_quarter * (1.5 + terminating_stance_to_q_step_ratio),                              0.0,    0.0                );
-    Matrix<float, 3, 1> p9 = p0;
+    Matrix<float, 3, 1> p0(distance_shift + (step_size / 2),                            0.0, 0.0);
+    Matrix<float, 3, 1> p1(distance_shift + (step_size / 4),                            0.0, -penetration_depth);
+    Matrix<float, 3, 1> p2(distance_shift + 0,                                          0.0, -penetration_depth);
+    Matrix<float, 3, 1> p3(distance_shift + (-step_size / 4),                           0.0, -penetration_depth);
+    Matrix<float, 3, 1> p4(distance_shift + (-step_size / 2),                           0.0, 0.0);
+    Matrix<float, 3, 1> p5 = (1.0 / 3.0) * (5 * p4 - 2 * p3);
+    Matrix<float, 3, 1> p6(distance_shift + ((-step_size / 2) * curve_width_ratio),     0.0, z_via);
+    Matrix<float, 3, 1> p7(distance_shift + 0,                                          0.0, z_via);
+    Matrix<float, 3, 1> p8(distance_shift + ((step_size / 2) * curve_width_ratio),      0.0, z_via);
+    Matrix<float, 3, 1> p9 = (1.0 / 3.0) * (5 * p0 - 2 * p1);
 
     float t_bezier;
     if (t_local < s_1)
     {
-        t_bezier     = (t_local) / s_1;
-        output       = (1 - t_bezier) * p0 + t_bezier * p1;
+        t_bezier = (t_local - 0) / s_1;
+        output = pow((1 - t_bezier), 2) * p0 + 2 * (1 - t_bezier) * t_bezier * p1 + pow(t_bezier, 2) * p2;
         stance_phase = true;
     }
     else if (t_local < s_1 + s_2)
     {
         t_bezier = (t_local - s_1) / s_2;
-        output = (1 - t_bezier) * p1 + t_bezier * p2;
+        output = pow((1 - t_bezier), 2) * p2 + 2 * (1 - t_bezier) * t_bezier * p3 + pow(t_bezier, 2) * p4;
         stance_phase = true;
     }
     else if (t_local < s_1 + s_2 + s_3)
     {
         t_bezier = (t_local - (s_1 + s_2)) / s_3;
-        output = (1 - t_bezier) * p2 + t_bezier * p3;
-        stance_phase = true;
+        output = pow((1 - t_bezier), 3) * p4 + 3 * pow((1 - t_bezier), 2) * t_bezier * p5 + 3 * (1 - t_bezier) * pow(t_bezier, 2) * p6 + pow(t_bezier, 3) * p7;
+        stance_phase = false;
     }
     else if (t_local < s_1 + s_2 + s_3 + s_4)
     {
         t_bezier = (t_local - (s_1 + s_2 + s_3)) / s_4;
-        output = (1 - t_bezier) * p3 + t_bezier * p4;
-        stance_phase = true;
-    }
-    else if (t_local < s_1 + s_2 + s_3 + s_4 + s_56)
-    {
-        t_bezier = (t_local - (s_1 + s_2 + s_3 + s_4)) / s_56;
-        if (smooth)
-        {
-            t_bezier /= 2;
-            t_bezier = 3 * pow(t_bezier, 2) - 2 * pow(t_bezier, 3);
-            t_bezier *= 2;
-        }
-        output = pow((1 - t_bezier), 2) * p4 + 2 * (1 - t_bezier) * t_bezier * p5 + pow(t_bezier, 2) * p6;
+        output = pow((1 - t_bezier), 3) * p7 + 3 * pow((1 - t_bezier), 2) * t_bezier * p8 + 3 * (1 - t_bezier) * pow(t_bezier, 2) * p9 + pow(t_bezier, 3) * p0;
         stance_phase = false;
     }
-    else if (t_local < s_1 + s_2 + s_3 + s_4 + s_56 + s_78)
-    {
-        t_bezier = (t_local - (s_1 + s_2 + s_3 + s_4 + s_56)) / s_78;
-        if (smooth)
-        {
-            t_bezier = t_bezier / 2 + 0.5;
-            t_bezier = 3 * pow(t_bezier, 2) - 2 * pow(t_bezier, 3);
-            t_bezier = (t_bezier - 0.5) * 2;
-        }
-        output       = pow((1 - t_bezier), 2) * p6 + 2 * (1 - t_bezier) * t_bezier * p7 + pow(t_bezier, 2) * p8;
-        stance_phase = false;
-    }
-    else if (t_local <= s_1 + s_2 + s_3 + s_4 + s_56 + s_78 + s_9)
-    {
-        t_bezier     = (t_local - (s_1 + s_2 + s_3 + s_4 + s_56 + s_78)) / s_9;
-        output       = (1 - t_bezier) * p8 + t_bezier * p9;
-        stance_phase = true;
-    }
-
+    
     if (abs(curving_radius) < 500)
     {
         Matrix<float, 3, 1> norm_radius  = (output - Matrix<float, 3, 1>(0, curving_radius, output(2))) / (output - Matrix<float, 3, 1>(0, curving_radius, output(2))).norm();
@@ -238,8 +204,154 @@ std::pair<Matrix<float, 3, 1>, bool> compound_bezier(
     output_homogeneous   = rotation_z_matrix(rotation_angle) * output_homogeneous;
     output               = output_homogeneous.head<3>();
 
+
     return std::make_pair(output, stance_phase);
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// std::pair<Matrix<float, 3, 1>, bool> compound_bezier(
+//     float t,
+//     float step_time_quarter,
+//     float speed,
+//     float terminating_stance_to_q_step_ratio,
+//     float phase_shift,
+//     float z_via,
+//     float curving_radius,
+//     float swing_curving_to_ssq_ratio,
+//     float penetration_depth,
+//     float rotation_angle,
+//     bool smooth
+// )
+// {
+//     Matrix<float, 3, 1> output(0, 0, 0);
+//     float step_size_quarter = speed * step_time_quarter;
+//     if (step_size_quarter == 0)
+//     {
+//         z_via = 0;
+//     }
+
+//     if (terminating_stance_to_q_step_ratio >= 0.4)
+//     {
+//         terminating_stance_to_q_step_ratio = 0.4;
+//     }
+
+//     float t_local = t + phase_shift;
+//     if (t_local > 1) {
+//         t_local -= static_cast<int>(t_local);
+//     }
+
+//     bool stance_phase = false;
+
+//     float t_1  = step_time_quarter;
+//     float t_2  = step_time_quarter;
+//     float t_3  = step_time_quarter;
+//     float t_4  = t_1 * terminating_stance_to_q_step_ratio;
+//     float t_56 = t_1 * (0.5 - terminating_stance_to_q_step_ratio);
+//     float t_78 = t_1 * (0.5 - terminating_stance_to_q_step_ratio);
+//     float t_9  = t_1 * terminating_stance_to_q_step_ratio;
+
+//     float t_sum = t_1 + t_2 + t_3 + t_4 + t_56 + t_78 + t_9;
+
+//     float s_1  = t_1  / t_sum;
+//     float s_2  = t_2  / t_sum;
+//     float s_3  = t_3  / t_sum;
+//     float s_4  = t_4  / t_sum;
+//     float s_56 = t_56 / t_sum;
+//     float s_78 = t_78 / t_sum;
+//     float s_9  = t_9  / t_sum;
+
+//     Matrix<float, 3, 1> p0(  1.5 * step_size_quarter,                                                                     0.0,    0.0                );
+//     Matrix<float, 3, 1> p1(  0.5 * step_size_quarter,                                                                     0.0,    -penetration_depth );
+//     Matrix<float, 3, 1> p2( -0.5 * step_size_quarter,                                                                     0.0,    -penetration_depth );
+//     Matrix<float, 3, 1> p3( -1.5 * step_size_quarter,                                                                     0.0,    0.0                );
+//     Matrix<float, 3, 1> p4( -step_size_quarter * (1.5 + terminating_stance_to_q_step_ratio),                              0.0,    0.0                );
+//     Matrix<float, 3, 1> p5( -step_size_quarter * (1.5 + terminating_stance_to_q_step_ratio + swing_curving_to_ssq_ratio), 0.0,    z_via              );
+//     Matrix<float, 3, 1> p6(  0.0,                                                                                         0.0,    z_via              );
+//     Matrix<float, 3, 1> p7(  step_size_quarter * (1.5 + terminating_stance_to_q_step_ratio + swing_curving_to_ssq_ratio), 0.0,    z_via              );
+//     Matrix<float, 3, 1> p8(  step_size_quarter * (1.5 + terminating_stance_to_q_step_ratio),                              0.0,    0.0                );
+//     Matrix<float, 3, 1> p9 = p0;
+
+//     float t_bezier;
+//     if (t_local < s_1)
+//     {
+//         t_bezier     = (t_local) / s_1;
+//         output       = (1 - t_bezier) * p0 + t_bezier * p1;
+//         stance_phase = true;
+//     }
+//     else if (t_local < s_1 + s_2)
+//     {
+//         t_bezier = (t_local - s_1) / s_2;
+//         output = (1 - t_bezier) * p1 + t_bezier * p2;
+//         stance_phase = true;
+//     }
+//     else if (t_local < s_1 + s_2 + s_3)
+//     {
+//         t_bezier = (t_local - (s_1 + s_2)) / s_3;
+//         output = (1 - t_bezier) * p2 + t_bezier * p3;
+//         stance_phase = true;
+//     }
+//     else if (t_local < s_1 + s_2 + s_3 + s_4)
+//     {
+//         t_bezier = (t_local - (s_1 + s_2 + s_3)) / s_4;
+//         output = (1 - t_bezier) * p3 + t_bezier * p4;
+//         stance_phase = true;
+//     }
+//     else if (t_local < s_1 + s_2 + s_3 + s_4 + s_56)
+//     {
+//         t_bezier = (t_local - (s_1 + s_2 + s_3 + s_4)) / s_56;
+//         if (smooth)
+//         {
+//             t_bezier /= 2;
+//             t_bezier = 3 * pow(t_bezier, 2) - 2 * pow(t_bezier, 3);
+//             t_bezier *= 2;
+//         }
+//         output = pow((1 - t_bezier), 2) * p4 + 2 * (1 - t_bezier) * t_bezier * p5 + pow(t_bezier, 2) * p6;
+//         stance_phase = false;
+//     }
+//     else if (t_local < s_1 + s_2 + s_3 + s_4 + s_56 + s_78)
+//     {
+//         t_bezier = (t_local - (s_1 + s_2 + s_3 + s_4 + s_56)) / s_78;
+//         if (smooth)
+//         {
+//             t_bezier = t_bezier / 2 + 0.5;
+//             t_bezier = 3 * pow(t_bezier, 2) - 2 * pow(t_bezier, 3);
+//             t_bezier = (t_bezier - 0.5) * 2;
+//         }
+//         output       = pow((1 - t_bezier), 2) * p6 + 2 * (1 - t_bezier) * t_bezier * p7 + pow(t_bezier, 2) * p8;
+//         stance_phase = false;
+//     }
+//     else if (t_local <= s_1 + s_2 + s_3 + s_4 + s_56 + s_78 + s_9)
+//     {
+//         t_bezier     = (t_local - (s_1 + s_2 + s_3 + s_4 + s_56 + s_78)) / s_9;
+//         output       = (1 - t_bezier) * p8 + t_bezier * p9;
+//         stance_phase = true;
+//     }
+
+//     if (abs(curving_radius) < 500)
+//     {
+//         Matrix<float, 3, 1> norm_radius  = (output - Matrix<float, 3, 1>(0, curving_radius, output(2))) / (output - Matrix<float, 3, 1>(0, curving_radius, output(2))).norm();
+//         output                           = curving_radius * norm_radius + Matrix<float, 3, 1>(0, curving_radius, output(2));
+//     }
+
+//     Matrix<float, 4, 1> output_homogeneous(output(0), output(1), output(2), 1.0);
+//     output_homogeneous   = rotation_z_matrix(rotation_angle) * output_homogeneous;
+//     output               = output_homogeneous.head<3>();
+
+//     return std::make_pair(output, stance_phase);
+// }
 
 
 
@@ -359,7 +471,21 @@ void GaitManager::publishing_routine(float xyz_cmd_array[4][3])
     }
 
     for (int i = 0; i < 4; ++i) {
-        auto result = compound_bezier(t, total_step_time / 4.0, legs_speeds[i], 0.3, phase_shift[i], 0.1, legs_curves_radii[i], 0.2, 0.0, legs_thetas[i], true);
+        // auto result = compound_bezier(t, total_step_time / 4.0, legs_speeds[i], 0.3, phase_shift[i], 0.1, legs_curves_radii[i], 0.2, 0.0, legs_thetas[i], true);
+        auto result = compound_bezier(  
+            t,                      // t
+            total_step_time,        // total_step_time
+            legs_speeds[i],         // speed
+            0.85,                   // stance_ratio = 0.85
+            phase_shift[i],         // phase_shift = 0
+            0.2,                    // z_via = 0.2
+            4.0,                    // curve_width_ratio = 1.0
+            0.0,                    // penetration_depth = 0
+            legs_curves_radii[i],   // curving_radius = 1000
+            legs_thetas[i],         // rotation_angle = 0
+            0.0                     // distance_shift = 0
+            
+        );
         Vector3f p_i_out = result.first;
         is_stance[i] = result.second;
         palms_cmd.row(i) = (tf_bg * tf_gi_tr[i] * p_i_out.homogeneous()).head<3>();

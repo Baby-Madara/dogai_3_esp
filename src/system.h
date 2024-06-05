@@ -21,6 +21,10 @@
 #include <freertos/FreeRTOS.h>
 #include <freertos/task.h>
 
+#include <WiFiClient.h>
+#include <ArduinoOTA.h>
+
+
 
 
 
@@ -40,7 +44,7 @@ void Task1_WiFi_comm  (void *pvParameters);
 void Task2_controller (void *pvParameters);
 void Task3_gait_IK    (void *pvParameters);
 void Task4_observer   (void *pvParameters);
-void Task5_Serial     (void *pvParameters);
+// void Task5_Serial     (void *pvParameters);
 void Task6_LiDAR      (void *pvParameters);
 
 void taskInitializers();
@@ -57,7 +61,7 @@ extern TaskHandle_t Task1_Handle;
 extern TaskHandle_t Task2_Handle;
 extern TaskHandle_t Task3_Handle;
 extern TaskHandle_t Task4_Handle;
-extern TaskHandle_t Task5_Handle;
+// extern TaskHandle_t Task5_Handle;
 extern TaskHandle_t Task6_Handle;
 
 

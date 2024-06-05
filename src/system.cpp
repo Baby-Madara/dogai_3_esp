@@ -12,10 +12,18 @@ const char *ssid = "Fr7oo";
 const char *password = "25897463";
 
 // Static IP configuration
-IPAddress local_IP(192, 168, 1, 184);
+IPAddress local_IP(
+    192,
+    168,
+    81,
+    28
+);
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
-IPAddress dns(8, 8, 8, 8);
+// IPAddress dns(8, 8, 8, 8);
+IPAddress primaryDNS(8, 8, 8, 8);   // Optional
+IPAddress secondaryDNS(8, 8, 4, 4); // Optional
+
 
 // Web server and WebSocket server
 WebServer server(80);
@@ -28,248 +36,261 @@ void parseJsonData(char *jsonString);
 
 // HTML page (minified for brevity)
 const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
-    <html>
-    <head>
-    <!--  <title>ESP32 Control</title>  -->
-      <title>Doggo</title>
-      <style>
-        body { 
-          font-family: Arial, sans-serif; 
-          text-align: center; 
-          display: grid;
-          grid-template-rows: auto auto auto auto auto auto auto;
-          gap: 20px;
-          padding: 20px;
-          user-select: none;
-          -webkit-user-select: none;
-        }
-        .grid-container {
-          display: grid;
-          grid-template-columns: 1fr 2fr 1fr;
-          align-items: center;
-          place-items: center;
-          gap: 20px;
-        }
-        img { 
-          justify-self: center;
-          align-self: center;
-          margin: 0 auto; 
-          grid-column: span 3;
+<html>
+<head>
+  <title>Doggo</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      text-align: center; 
+      display: grid;
+      grid-template-rows: auto auto auto auto auto auto auto;
+      gap: 20px;
+      padding: 20px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .grid-container {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr;
+      align-items: center;
+      place-items: center;
+      gap: 20px;
+    }
+    img { 
+      justify-self: center;
+      align-self: center;
+      margin: 0 auto; 
+      grid-column: span 3;
+    }
+    .joystick { 
+      margin: 0 auto; 
+      display: inline-block; 
+      width: 200px; 
+      height: 200px; 
+      background: #ccc; 
+      position: relative; 
+      border-radius: 50%; 
+      touch-action: none; 
+    }
+    .joystick .stick { 
+      width: 80px; 
+      height: 80px; 
+      background: #888; 
+      border-radius: 50%; 
+      position: absolute; 
+      left: 50%; 
+      top: 50%; 
+      transform: translate(-50%, -50%); 
+      touch-action: none; 
+    }
+    .slider-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .slider input[type="range"] { 
+      width: 100%; 
+      height: 50px;
+      transform: translateX(-50%);
+    }
+    .slider button {
+      margin-top: 10px;
+      padding: 5px 10px;
+      font-size: 16px;
+    }
+    .log { 
+      margin: 0 auto; 
+      border: 1px solid #ccc; 
+      padding: 10px; 
+      text-align: left;
+      grid-column: span 3;
+    }
+    .log table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .log th, .log td {
+      border: 1px solid #ccc;
+      padding: 5px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .title, .image, .data, .velocities, .rpy1, .rpy2, .xyz {
+      grid-column: span 3;
+    }
+  </style>
+  <script>
+    var socket;
+    var logData = {
+      vx: 0, vy: 0, vz: 0,
+      R1: 0, P1: 0, Y1: 0,
+      R2: 0, P2: 0, Y2: 0,
+      X: 0, Y: 0, Z: 0
+    };
 
+    function initWebSocket() {
+      socket = new WebSocket('ws://' + window.location.hostname + ':81');
+      socket.binaryType = 'arraybuffer';
+
+      socket.onopen = function() {
+        console.log('WebSocket connection established');
+      };
+
+      socket.onmessage = function(event) {
+        drawImage(new Uint8Array(event.data));
+      };
+
+      socket.onclose = function() {
+        console.log('WebSocket connection closed, attempting to reconnect in 1 second...');
+        setTimeout(initWebSocket, 1000);
+      };
+
+      socket.onerror = function(error) {
+        console.error('WebSocket error:', error);
+      };
+
+      setInterval(() => {
+        if (socket.readyState === WebSocket.OPEN) {
+          socket.send(JSON.stringify(logData));
+          console.log('hi');
         }
-        .joystick { 
-          margin: 0 auto; 
-          display: inline-block; 
-          width: 150px; 
-          height: 150px; 
-          background: #ccc; 
-          position: relative; 
-          border-radius: 50%; 
-          touch-action: none; 
+      }, 150);
+    }
+
+    function drawImage(byteArray) {
+      var canvas = document.getElementById('photoCanvas');
+      var ctx = canvas.getContext('2d');
+      var imageData = ctx.createImageData(50, 50);
+      for (var i = 0; i < byteArray.length; i++) {
+        var value = byteArray[i];
+        imageData.data[i * 4] = value;        // Red
+        imageData.data[i * 4 + 1] = value;    // Green
+        imageData.data[i * 4 + 2] = value;    // Blue
+        imageData.data[i * 4 + 3] = 255;      // Alpha
+      }
+      ctx.putImageData(imageData, 0, 0);
+    }
+
+    function init() {
+      console.log("loaded");
+      initWebSocket();
+
+      const joysticks = document.querySelectorAll('.joystick');
+      joysticks.forEach((joystick, index) => {
+        const stick = joystick.querySelector('.stick');
+        const joystickRect = joystick.getBoundingClientRect();
+        const maxRadius = joystick.offsetWidth / 2 - stick.offsetWidth / 2;
+
+        function handleJoystickMove(event) {
+          event.preventDefault();
+          const touch = event.touches ? event.touches[0] : event;
+          const x = touch.clientX - joystickRect.left - joystick.offsetWidth / 2;
+          const y = touch.clientY - joystickRect.top - joystick.offsetHeight / 2;
+          const distance = Math.min(Math.sqrt(x * x + y * y), maxRadius);
+          const angle = Math.atan2(y, x);
+
+          const offsetX = Math.cos(angle) * distance;
+          const offsetY = Math.sin(angle) * distance;
+
+          stick.style.transform = `translate(calc(${offsetX}px - 50%), calc(${offsetY}px - 50%))`;
+
+          updateLogData(index + 1, offsetY * (-20.0 / 12.0), offsetX * (-20.0 / 12.0));
         }
-        .joystick .stick { 
-          width: 60px; 
-          height: 60px; 
-          background: #888; 
-          border-radius: 50%; 
-          position: absolute; 
-          left: 50%; 
-          top: 50%; 
-          transform: translate(-50%, -50%); 
-          touch-action: none; 
+
+        function resetJoystick() {
+          stick.style.transform = 'translate(-50%, -50%)';
+          updateLogData(index + 1, 0, 0);
         }
-        .slider input[type="range"] { 
-          width: 100%; 
-          height: 30px;
-          transform: translateX(-50%);
-        }
-        .log { 
-          margin: 0 auto; 
-          border: 1px solid #ccc; 
-          padding: 10px; 
-          text-align: left;
-          grid-column: span 3;
-        }
-        .log table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-        .log th, .log td {
-          border: 1px solid #ccc;
-          padding: 5px;
-          text-align: center;
-          white-space: nowrap;
-        }
-        .title, .image, .data, .velocities, .rpy1, .rpy2, .xyz {
-          grid-column: span 3;
-        }
-      </style>
-      <script>
-        var socket;
-        var logData = {
-          vx: 0, vy: 0, vz: 0,
-          R1: 0, P1: 0, Y1: 0,
-          R2: 0, P2: 0, Y2: 0,
-          X: 0, Y: 0, Z: 0
-        };
-    
-        function initWebSocket() {
-          socket = new WebSocket('ws://' + window.location.hostname + ':81');
-          socket.binaryType = 'arraybuffer';
-    
-          socket.onopen = function() {
-            console.log('WebSocket connection established');
-          };
-    
-          socket.onmessage = function(event) {
-            drawImage(new Uint8Array(event.data));
-          };
-    
-          socket.onclose = function() {
-            console.log('WebSocket connection closed, attempting to reconnect in 1 second...');
-            setTimeout(initWebSocket, 1000);
-          };
-    
-          socket.onerror = function(error) {
-            console.error('WebSocket error:', error);
-          };
-    
-          setInterval(() => {
-            if (socket.readyState === WebSocket.OPEN) {
-              socket.send(JSON.stringify(logData));
-              console.log('hi');
-            }
-          }, 150);
-        }
-    
-        function drawImage(byteArray) {
-          var canvas = document.getElementById('photoCanvas');
-          var ctx = canvas.getContext('2d');
-          var imageData = ctx.createImageData(50, 50);
-          for (var i = 0; i < byteArray.length; i++) {
-            var value = byteArray[i];
-            imageData.data[i * 4] = value;        // Red
-            imageData.data[i * 4 + 1] = value;    // Green
-            imageData.data[i * 4 + 2] = value;    // Blue
-            imageData.data[i * 4 + 3] = 255;      // Alpha
-          }
-          ctx.putImageData(imageData, 0, 0);
-        }
-    
-        function init() {
-          console.log("loaded");
-          initWebSocket();
-    
-          const joysticks = document.querySelectorAll('.joystick');
-          joysticks.forEach((joystick, index) => {
-            const stick = joystick.querySelector('.stick');
-            const joystickRect = joystick.getBoundingClientRect();
-            const maxRadius = joystick.offsetWidth / 2 - stick.offsetWidth / 2;
-    
-            function handleJoystickMove(event) {
-              event.preventDefault();
-              const touch = event.touches ? event.touches[0] : event;
-              const x = touch.clientX - joystickRect.left - joystick.offsetWidth / 2;
-              const y = touch.clientY - joystickRect.top - joystick.offsetHeight / 2;
-              const distance = Math.min(Math.sqrt(x * x + y * y), maxRadius);
-              const angle = Math.atan2(y, x);
-    
-              const offsetX = Math.cos(angle) * distance;
-              const offsetY = Math.sin(angle) * distance;
-    
-              stick.style.transform = `translate(calc(${offsetX}px - 50%), calc(${offsetY}px - 50%))`;
-    
-              updateLogData(index + 1, offsetY * (-20.0 / 9.0), offsetX * (-20.0 / 9.0));
-            }
-    
-            function resetJoystick() {
-              stick.style.transform = 'translate(-50%, -50%)';
-              updateLogData(index + 1, 0, 0);
-            }
-    
-            joystick.addEventListener('mousedown', (event) => {
-              document.addEventListener('mousemove', handleJoystickMove);
-              document.addEventListener('mouseup', () => {
-                document.removeEventListener('mousemove', handleJoystickMove);
-                resetJoystick();
-              });
-            });
-    
-            joystick.addEventListener('touchstart', (event) => {
-              document.addEventListener('touchmove', handleJoystickMove);
-              document.addEventListener('touchend', () => {
-                document.removeEventListener('touchmove', handleJoystickMove);
-                resetJoystick();
-              });
-            });
+
+        joystick.addEventListener('mousedown', (event) => {
+          document.addEventListener('mousemove', handleJoystickMove);
+          document.addEventListener('mouseup', () => {
+            document.removeEventListener('mousemove', handleJoystickMove);
+            resetJoystick();
           });
-    
-          const sliders = document.querySelectorAll('.slider input[type="range"]');
-          sliders.forEach((slider, index) => {
-            slider.addEventListener('input', () => {
-              sendSliderData(index + 1, parseFloat(slider.value));
-            });
+        });
+
+        joystick.addEventListener('touchstart', (event) => {
+          document.addEventListener('touchmove', handleJoystickMove);
+          document.addEventListener('touchend', () => {
+            document.removeEventListener('touchmove', handleJoystickMove);
+            resetJoystick();
           });
-        }
-    
-        function updateLogData(joystickIndex, x, y) {
-          switch (joystickIndex) {
-            case 1:
-              logData.vx = x; //.toFixed(3);
-              logData.vy = y; //.toFixed(3);
-              break;
-            case 2:
-              logData.R1 = x; //.toFixed(3);
-              logData.P1 = y; //.toFixed(3);
-              break;
-            case 3:
-              logData.R2 = x; //.toFixed(3);
-              logData.P2 = y; //.toFixed(3);
-              break;
-            case 4:
-              logData.X = x; //.toFixed(3);
-              logData.Y = y; //.toFixed(3);
-              break;
-          }
-          updateLogDisplay();
-        }
-    
-        function sendSliderData(id, value) {
-          switch (id) {
-            case 1:
-              logData.vz = value;
-              break;
-            case 2:
-              logData.Y1 = value;
-              break;
-            case 3:
-              logData.Y2 = value;
-              break;
-            case 4:
-              logData.Z = value;
-              break;
-          }
-          updateLogDisplay();
-        }
-    
-        function updateLogDisplay() {
-          document.getElementById('vx').innerText = logData.vx.toFixed(2);
-          document.getElementById('vy').innerText = logData.vy.toFixed(2);
-          document.getElementById('vz').innerText = logData.vz.toFixed(2);
-          document.getElementById('R1').innerText = logData.R1.toFixed(2);
-          document.getElementById('P1').innerText = logData.P1.toFixed(2);
-          document.getElementById('Y1').innerText = logData.Y1.toFixed(2);
-          document.getElementById('R2').innerText = logData.R2.toFixed(2);
-          document.getElementById('P2').innerText = logData.P2.toFixed(2);
-          document.getElementById('Y2').innerText = logData.Y2.toFixed(2);
-          document.getElementById('X').innerText = logData.X.toFixed(2);
-          document.getElementById('Y').innerText = logData.Y.toFixed(2);
-          document.getElementById('Z').innerText = logData.Z.toFixed(2);
-        }    
-        document.addEventListener('DOMContentLoaded', init);
-        </script>
+        });
+      });
+
+      const sliders = document.querySelectorAll('.slider input[type="range"]');
+      sliders.forEach((slider, index) => {
+        slider.addEventListener('input', () => {
+          sendSliderData(index + 1, parseFloat(slider.value));
+        });
+
+        const button = slider.nextElementSibling;
+        button.addEventListener('click', () => {
+          slider.value = 0;
+          sendSliderData(index + 1, 0);
+        });
+      });
+    }
+
+    function updateLogData(joystickIndex, x, y) {
+      switch (joystickIndex) {
+        case 1:
+          logData.vx = x; //.toFixed(3);
+          logData.vy = y; //.toFixed(3);
+          break;
+        case 2:
+          logData.R1 = x; //.toFixed(3);
+          logData.P1 = y; //.toFixed(3);
+          break;
+        case 3:
+          logData.R2 = x; //.toFixed(3);
+          logData.P2 = y; //.toFixed(3);
+          break;
+        case 4:
+          logData.X = x; //.toFixed(3);
+          logData.Y = y; //.toFixed(3);
+          break;
+      }
+      updateLogDisplay();
+    }
+
+    function sendSliderData(id, value) {
+      switch (id) {
+        case 1:
+          logData.vz = value;
+          break;
+        case 2:
+          logData.Y1 = value;
+          break;
+        case 3:
+          logData.Y2 = value;
+          break;
+        case 4:
+          logData.Z = value;
+          break;
+      }
+      updateLogDisplay();
+    }
+
+    function updateLogDisplay() {
+      document.getElementById('vx').innerText = logData.vx.toFixed(2);
+      document.getElementById('vy').innerText = logData.vy.toFixed(2);
+      document.getElementById('vz').innerText = logData.vz.toFixed(2);
+      document.getElementById('R1').innerText = logData.R1.toFixed(2);
+      document.getElementById('P1').innerText = logData.P1.toFixed(2);
+      document.getElementById('Y1').innerText = logData.Y1.toFixed(2);
+      document.getElementById('R2').innerText = logData.R2.toFixed(2);
+      document.getElementById('P2').innerText = logData.P2.toFixed(2);
+      document.getElementById('Y2').innerText = logData.Y2.toFixed(2);
+      document.getElementById('X').innerText = logData.X.toFixed(2);
+      document.getElementById('Y').innerText = logData.Y.toFixed(2);
+      document.getElementById('Z').innerText = logData.Z.toFixed(2);
+    }    
+    document.addEventListener('DOMContentLoaded', init);
+  </script>
 </head>
-<!-- <body onload="init()"> -->
 <body>
   <h1 class="title">Doggo</h1>
   <canvas id="photoCanvas" width="300" height="200" class="image"></canvas>
@@ -300,8 +321,11 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
       <div class="stick"></div>
     </div>
     <div>Velocities</div>
-    <div class="slider" id="slider1">
-      <input type="range" min="-100" max="100" value="0">
+    <div class="slider-container">
+      <div class="slider" id="slider1">
+        <input type="range" min="-100" max="100" value="0">
+        <button>Reset</button>
+      </div>
     </div>
   </div>
   <div class="grid-container rpy1">
@@ -309,8 +333,11 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
       <div class="stick"></div>
     </div>
     <div>RPY1</div>
-    <div class="slider" id="slider2">
-      <input type="range" min="-100" max="100" value="0">
+    <div class="slider-container">
+      <div class="slider" id="slider2">
+        <input type="range" min="-100" max="100" value="0">
+        <button>Reset</button>
+      </div>
     </div>
   </div>
   <div class="grid-container rpy2">
@@ -318,8 +345,11 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
       <div class="stick"></div>
     </div>
     <div>RPY2</div>
-    <div class="slider" id="slider3">
-      <input type="range" min="-100" max="100" value="0">
+    <div class="slider-container">
+      <div class="slider" id="slider3">
+        <input type="range" min="-100" max="100" value="0">
+        <button>Reset</button>
+      </div>
     </div>
   </div>
   <div class="grid-container xyz">
@@ -327,12 +357,16 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
       <div class="stick"></div>
     </div>
     <div>XYZ</div>
-    <div class="slider" id="slider4">
-      <input type="range" min="-100" max="100" value="0">
+    <div class="slider-container">
+      <div class="slider" id="slider4">
+        <input type="range" min="-100" max="100" value="0">
+        <button>Reset</button>
+      </div>
     </div>
   </div>
 </body>
 </html>
+
 )rawliteral";
 
 void handleRoot()
@@ -364,8 +398,9 @@ void webSocketEventPython(uint8_t num, WStype_t type, uint8_t *payload, size_t l
     }
 }
 
+SemaphoreHandle_t gaitMutex;
 
-GaitManager gaitManager;
+GaitManager gaitManager; //  = GaitManager();
 
 
 float vx_vy_wz      [3] = {0};
@@ -385,27 +420,45 @@ void parseJsonData(char *jsonString)
         return 0;
     };
     // Extract values and save them into variables
-    float vx    = vx_vy_wz[0]      = MAP(extractValue(jsonString, "\"vx\""), 0, 100.0, 0.0, 0.15);
-    float vy    = vx_vy_wz[1]      = MAP(extractValue(jsonString, "\"vy\""), 0, 100.0, 0.0, 0.15);
-    float vz    = vx_vy_wz[2]      = MAP(extractValue(jsonString, "\"vz\""), 0, 100.0, 0.0, 0.15);
-    float R1    = rpy1[0]          = MAP(extractValue(jsonString, "\"R1\""), 0, 100.0, 0, 0.6);
-    float P1    = rpy1[1]          = MAP(extractValue(jsonString, "\"P1\""), 0, 100.0, 0, 0.6);
-    float Y1    = rpy1[2]          = MAP(extractValue(jsonString, "\"Y1\""), 0, 100.0, 0, 0.6);
-    float R2    = rpy2[0]          = MAP(extractValue(jsonString, "\"R2\""), 0, 100.0, 0, 0.6);
-    float P2    = rpy2[1]          = MAP(extractValue(jsonString, "\"P2\""), 0, 100.0, 0, 0.6);
-    float Y2    = rpy2[2]          = MAP(extractValue(jsonString, "\"Y2\""), 0, 100.0, 0, 0.6);
-    float X     = xyz_translate[0] = MAP(extractValue(jsonString, "\"X\""), 0, 100.0, 0.0, 0.15);
-    float Y     = xyz_translate[1] = MAP(extractValue(jsonString, "\"Y\""), 0, 100.0, 0.0, 0.15);
-    float Z     = xyz_translate[2] = MAP(extractValue(jsonString, "\"Z\""), 0, 100.0, 0.0, 0.15)+0.2;
+    float vx    = MAP(extractValue(jsonString, "\"vx\""), 0, 100.0, 0.0, 0.15);
+    float vy    = MAP(extractValue(jsonString, "\"vy\""), 0, 100.0, 0.0, 0.15);
+    float vz    = MAP(extractValue(jsonString, "\"vz\""), 0, 100.0, 0.0, 0.15);
+    float R1    = MAP(extractValue(jsonString, "\"R1\""), 0, 100.0, 0, 0.6);
+    float P1    = MAP(extractValue(jsonString, "\"P1\""), 0, 100.0, 0, 0.6);
+    float Y1    = MAP(extractValue(jsonString, "\"Y1\""), 0, 100.0, 0, 0.6);
+    float R2    = MAP(extractValue(jsonString, "\"R2\""), 0, 100.0, 0, 0.6);
+    float P2    = MAP(extractValue(jsonString, "\"P2\""), 0, 100.0, 0, 0.6);
+    float Y2    = MAP(extractValue(jsonString, "\"Y2\""), 0, 100.0, 0, 0.6);
+    float X     = MAP(extractValue(jsonString, "\"X\""), 0, 100.0, 0.0, 0.15) + 0.05;
+    float Y     = MAP(extractValue(jsonString, "\"Y\""), 0, 100.0, 0.0, 0.15); 
+    float Z     = MAP(extractValue(jsonString, "\"Z\""), 0, 100.0, 0.0, 0.15) + 0.2;
     
-    gaitManager.update_commands(vx_vy_wz, rpy1, rpy2, xyz_translate);
+    if (xSemaphoreTake(gaitMutex, 100) == pdTRUE) {
+        
+        vx_vy_wz[0]      = vx ;
+        vx_vy_wz[1]      = vy ;
+        vx_vy_wz[2]      = vz ;
+        rpy1[0]          = R1 ;
+        rpy1[1]          = P1 ;
+        rpy1[2]          = Y1 ;
+        rpy2[0]          = R2 ;
+        rpy2[1]          = P2 ;
+        rpy2[2]          = Y2 ;
+        xyz_translate[0] = X  ;
+        xyz_translate[1] = Y  ;
+        xyz_translate[2] = Z  ;
+        gaitManager.update_commands(vx_vy_wz, rpy1, rpy2, xyz_translate);
+        
+        xSemaphoreGive(gaitMutex);
+    }
+    
     // Print values to verify
-    Serial.println("");
-    Serial.printf("vx: %f, vy: %f, vz: %f\n", vx, vy, vz);
-    Serial.printf("R1: %f, P1: %f, Y1: %f\n", R1, P1, Y1);
-    Serial.printf("R2: %f, P2: %f, Y2: %f\n", R2, P2, Y2);
-    Serial.printf("X: %f, Y: %f, Z: %f\n", X, Y, Z);
-    Serial.println("");
+    // Serial.println("");
+    // Serial.printf("vx: %f, vy: %f, vz: %f\n", vx, vy, vz);
+    // Serial.printf("R1: %f, P1: %f, Y1: %f\n", R1, P1, Y1);
+    // Serial.printf("R2: %f, P2: %f, Y2: %f\n", R2, P2, Y2);
+    // Serial.printf("X: %f, Y: %f, Z: %f\n", X, Y, Z);
+    // Serial.println("");
 }
 
 float Xbs = 0.2044;
@@ -434,7 +487,7 @@ TaskHandle_t Task1_Handle;
 TaskHandle_t Task2_Handle;
 TaskHandle_t Task3_Handle;
 TaskHandle_t Task4_Handle;
-TaskHandle_t Task5_Handle;
+// TaskHandle_t Task5_Handle;
 TaskHandle_t Task6_Handle;
 
 void taskInitializers()
@@ -490,15 +543,15 @@ void taskInitializers()
         &Task4_Handle,
         0);
 
-    // Create Task5 Serial
-    xTaskCreatePinnedToCore(
-        Task5_Serial,
-        "Serial",
-        16384,
-        NULL,
-        1,
-        &Task5_Handle,
-        0);
+    // // Create Task5 Serial
+    // xTaskCreatePinnedToCore(
+    //     Task5_Serial,
+    //     "Serial",
+    //     16384,
+    //     NULL,
+    //     1,
+    //     &Task5_Handle,
+    //     0);
 
     // Create Task6 LiDAR
     xTaskCreatePinnedToCore(
@@ -514,11 +567,13 @@ void taskInitializers()
 void Task1_WiFi_comm(void *pvParameters)
 {
 
+    Serial.println("will try to start");
     // Configuring static IP
-    if (!WiFi.config(local_IP, gateway, subnet, dns))
+    if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS))
     {
         Serial.println("STA Failed to configure");
     }
+    Serial.println("WiFi configured.");
 
     // Connecting to WiFi
     WiFi.begin(ssid, password);
@@ -527,6 +582,49 @@ void Task1_WiFi_comm(void *pvParameters)
         vTaskDelay(500);
         Serial.print(".");
     }
+    
+    ArduinoOTA.onStart([]()
+                    {
+                        String type;
+                        if (ArduinoOTA.getCommand() == U_FLASH)
+                        {
+                            type = "sketch";
+                        }
+                        else
+                        { // U_SPIFFS
+                            type = "filesystem";
+                        }
+                        // NOTE: if updating SPIFFS this would be the place to unmount SPIFFS using SPIFFS.end()
+                        Serial.println("Start updating " + type); 
+                    });
+
+    ArduinoOTA.onEnd([]()
+                    {
+                        Serial.println("\nEnd");
+                    });
+
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total)
+                    {
+                        Serial.printf("Progress: %u%%\r", (progress / (total / 100))); 
+                    });
+
+    ArduinoOTA.onError([](ota_error_t error)
+                    {
+                        Serial.printf("Error[%u]: ", error);
+                        if (error == OTA_AUTH_ERROR)
+                        {            Serial.println("Auth Failed");                 }
+                        else if (error == OTA_BEGIN_ERROR)
+                        {            Serial.println("Begin Failed");                }
+                        else if (error == OTA_CONNECT_ERROR)
+                        {            Serial.println("Connect Failed");              }
+                        else if (error == OTA_RECEIVE_ERROR)
+                        {            Serial.println("Receive Failed");              }
+                        else if (error == OTA_END_ERROR)
+                        {            Serial.println("End Failed");                  }
+                    });
+
+    ArduinoOTA.begin();
+
     Serial.println("WiFi connected.");
     Serial.print("IP address: ");
     Serial.println(WiFi.localIP());
@@ -557,6 +655,7 @@ void Task1_WiFi_comm(void *pvParameters)
         server.handleClient();
         webSocketPhone.loop();
         webSocketPython.loop();
+        ArduinoOTA.handle();
         vTaskDelay(1);
     }
 }
@@ -572,6 +671,10 @@ void Task2_controller(void *pvParameters)
     }
 }
 
+
+
+
+
 void Task3_gait_IK(void *pvParameters)
 {
     // init:
@@ -580,7 +683,7 @@ void Task3_gait_IK(void *pvParameters)
     pwm.setOscillatorFrequency(26600000); // it is something between 23 to 27MHz (needed to be calibrated  --> calibration 26600000Hz)
     pwm.setPWMFreq(50);                   // of the output PWM signal from channels (for each servo)
     // GaitManager gaitManager;
-
+    
     for (int servo_num = 0; servo_num < 14; servo_num++)
     {
         joints[servo_num].writeAngleDirect(jointDefault[servo_num]);
@@ -590,14 +693,24 @@ void Task3_gait_IK(void *pvParameters)
     // loop:
     while (1)
     {
-        // gait
-        gaitManager.loop(xyz_cmd_array);
+        if (xSemaphoreTake(gaitMutex, 100) == pdTRUE) {
+            // gait
+            gaitManager.loop(xyz_cmd_array);
+            
+            xSemaphoreGive(gaitMutex);
+        }
+        
+        String legs_names[4] = {"fr | ", "fl | ", "br | ", "bl | "};
         
         // ik (in degrees)
         for (int i = 0; i < 4; i++)
-        {   palms_ik[i].ikCalc(xyz_cmd_array[i], theta_cmd_array[i]);   }
+        {   
+            // Serial.print(legs_names[i]);
+            palms_ik[i].ikCalc(xyz_cmd_array[i], theta_cmd_array[i]);
+        }
+        // Serial.println("\n");
         
-        vTaskDelay(10);
+        // vTaskDelay(10);
         
         
         // thetas to pwm_driver (in degrees)
@@ -610,7 +723,7 @@ void Task3_gait_IK(void *pvParameters)
             }
             // Serial.println("");
         }
-        vTaskDelay(10);
+        // vTaskDelay(10);
         
     }
 }
@@ -636,25 +749,25 @@ void Task4_observer(void *pvParameters)
     }
 }
 
-void Task5_Serial(void *pvParameters)
-{
-    int i = 0;
-    Serial.begin(115200);
+// void Task5_Serial(void *pvParameters)
+// {
+//     int i = 0;
+//     // Serial.begin(115200);
 
-    while (1)
-    {
-        // Print remaining stack size
-        // UBaseType_t remainingStack = uxTaskGetStackHighWaterMark(NULL);
-        // Serial.print("Remaining stack size: ");
-        // Serial.println(remainingStack);
-        // Serial.println("Hello " + String(i));
+//     while (1)
+//     {
+//         // Print remaining stack size
+//         // UBaseType_t remainingStack = uxTaskGetStackHighWaterMark(NULL);
+//         // Serial.print("Remaining stack size: ");
+//         // Serial.println(remainingStack);
+//         // Serial.println("Hello " + String(i));
 
-        // i++;
-        vTaskDelay(200); // Wait for 1 second
-                         // Serial.println(String(OrientationQuaternion.w) + String(" , ") + String(OrientationQuaternion.x) + String(" , ") + String(OrientationQuaternion.y) + String(" , ") + String(OrientationQuaternion.z));
-                         // vTaskDelay(1000); // Wait for 1 second
-    }
-}
+//         // i++;
+//         vTaskDelay(200); // Wait for 1 second
+//                          // Serial.println(String(OrientationQuaternion.w) + String(" , ") + String(OrientationQuaternion.x) + String(" , ") + String(OrientationQuaternion.y) + String(" , ") + String(OrientationQuaternion.z));
+//                          // vTaskDelay(1000); // Wait for 1 second
+//     }
+// }
 
 void Task6_LiDAR(void *pvParameters)
 {
@@ -688,6 +801,23 @@ void Task6_LiDAR(void *pvParameters)
         vTaskDelay(100 / 6);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ///////////////////////////////////////////////      HW     ///////////////////////////////////////////////
 
