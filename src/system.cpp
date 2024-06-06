@@ -15,8 +15,8 @@ const char *password = "25897463";
 IPAddress local_IP(
     192,
     168,
-    81,
-    28
+    1,
+    9
 );
 IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
@@ -398,7 +398,7 @@ void webSocketEventPython(uint8_t num, WStype_t type, uint8_t *payload, size_t l
     }
 }
 
-SemaphoreHandle_t gaitMutex;
+// SemaphoreHandle_t gaitMutex;
 
 GaitManager gaitManager; //  = GaitManager();
 
@@ -433,7 +433,9 @@ void parseJsonData(char *jsonString)
     float Y     = MAP(extractValue(jsonString, "\"Y\""), 0, 100.0, 0.0, 0.15); 
     float Z     = MAP(extractValue(jsonString, "\"Z\""), 0, 100.0, 0.0, 0.15) + 0.2;
     
-    if (xSemaphoreTake(gaitMutex, 100) == pdTRUE) {
+    float z_via = 0;
+    // if (xSemaphoreTake(gaitMutex, 100) == pdTRUE)
+    {
         
         vx_vy_wz[0]      = vx ;
         vx_vy_wz[1]      = vy ;
@@ -447,9 +449,11 @@ void parseJsonData(char *jsonString)
         xyz_translate[0] = X  ;
         xyz_translate[1] = Y  ;
         xyz_translate[2] = Z  ;
-        gaitManager.update_commands(vx_vy_wz, rpy1, rpy2, xyz_translate);
+        z_via            = xyz_translate[2]*(2.0/3.0);
+        // z_via            = 0.2;
+        gaitManager.update_commands(vx_vy_wz, rpy1, rpy2, xyz_translate, z_via);
         
-        xSemaphoreGive(gaitMutex);
+        // xSemaphoreGive(gaitMutex);
     }
     
     // Print values to verify
@@ -693,22 +697,23 @@ void Task3_gait_IK(void *pvParameters)
     // loop:
     while (1)
     {
-        if (xSemaphoreTake(gaitMutex, 100) == pdTRUE) {
+        // if (xSemaphoreTake(gaitMutex, 100) == pdTRUE)
+        {
             // gait
             gaitManager.loop(xyz_cmd_array);
             
-            xSemaphoreGive(gaitMutex);
+            // xSemaphoreGive(gaitMutex);
         }
         
-        String legs_names[4] = {"fr | ", "fl | ", "br | ", "bl | "};
+        String legs_names[4] = {"fr|", "fl|", "br|", "bl|"};
         
         // ik (in degrees)
         for (int i = 0; i < 4; i++)
         {   
-            // Serial.print(legs_names[i]);
+            Serial.print(legs_names[i]);
             palms_ik[i].ikCalc(xyz_cmd_array[i], theta_cmd_array[i]);
         }
-        // Serial.println("\n");
+        Serial.println("");
         
         // vTaskDelay(10);
         
@@ -732,19 +737,19 @@ void Task4_observer(void *pvParameters)
 {
     // init:
     if (myMPU.begin())
-    {
-        myMPU.calculate_IMU_error();
-    }
+    {   myMPU.calculate_IMU_error();        }
     else
-    {
-        Serial.println("MPU m4 48ala");
-    }
-
+    {   Serial.println("MPU m4 48ala");     }
+    
     // loop:
     while (1)
     {
-        // myMPU.updateOrientation();
-        // OrientationQuaternion = myMPU.getOrientationQuaternion();
+        try
+        {
+            // myMPU.updateOrientation();
+            // OrientationQuaternion = myMPU.getOrientationQuaternion();
+        }
+        catch(...){        }
         vTaskDelay(10);
     }
 }

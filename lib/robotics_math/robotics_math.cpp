@@ -15,24 +15,59 @@ void Palm::ikCalc(float goalVector[3], float thetas_array[3])
 
     float D, thetaS, thetaF, thetaL;
     
-    try {
-        D = ((pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2) + pow(X_goal - Xbs, 2)) - (pow(Ysl, 2) + pow(Xlf, 2) + pow(Xfp, 2))) / (2 * Xlf * Xfp);
-
-        thetaS = -atan2(-(Z_goal - Zbs), (Y_goal - Ybs)) + atan2(sqrt(pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2) - pow(Ysl, 2)), Ysl);
-        thetaF = atan2(sqrt(1 - pow(D, 2)), D);
-        thetaL = atan2((X_goal - Xbs), sqrt(pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2) - pow(Ysl, 2))) - atan2(Xfp * sin(thetaF), Xlf + Xfp * cos(thetaF));
-    } catch (...) {
-        float legLen_over_mag = 0.4057 / sqrt(pow(X_goal - Xbs, 2) + pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2));
-
-        X_goal = Xbs + legLen_over_mag * (X_goal - Xbs);
+    
+    
+    
+    
+    if ( sqrt((pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2)))   <= 0.071  )
+    {
+        // Serial.println("it is inside cylinder");
+        
+        if      ((X_goal - Xbs)>  0.4){X_goal = Xbs+0.39;}
+        else if ((X_goal - Xbs)< -0.4){X_goal = Xbs-0.39;}
+        
+        
+        
+        float legLen_over_mag = 0.072 / sqrt(pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2));
+        
         Y_goal = Ybs + legLen_over_mag * (Y_goal - Ybs);
         Z_goal = Zbs + legLen_over_mag * (Z_goal - Zbs);
-
+        
+        
+        
         D = ((pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2) + pow(X_goal - Xbs, 2)) - (pow(Ysl, 2) + pow(Xlf, 2) + pow(Xfp, 2))) / (2 * Xlf * Xfp);
         
         thetaS = -atan2(-(Z_goal - Zbs), (Y_goal - Ybs)) + atan2(sqrt(pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2) - pow(Ysl, 2)), Ysl);
         thetaF = atan2(sqrt(1 - pow(D, 2)), D);
         thetaL = atan2((X_goal - Xbs), sqrt(pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2) - pow(Ysl, 2))) - atan2(Xfp * sin(thetaF), Xlf + Xfp * cos(thetaF));
+        
+    }
+    else
+    {
+        // Serial.println("");
+        try
+        {
+            D = ((pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2) + pow(X_goal - Xbs, 2)) - (pow(Ysl, 2) + pow(Xlf, 2) + pow(Xfp, 2))) / (2 * Xlf * Xfp);
+
+            thetaS = -atan2(-(Z_goal - Zbs), (Y_goal - Ybs)) + atan2(sqrt(pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2) - pow(Ysl, 2)), Ysl);
+            thetaF = atan2(sqrt(1 - pow(D, 2)), D);
+            thetaL = atan2((X_goal - Xbs), sqrt(pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2) - pow(Ysl, 2))) - atan2(Xfp * sin(thetaF), Xlf + Xfp * cos(thetaF));
+        }
+        catch (...)
+        {
+            float legLen_over_mag = 0.4057 / sqrt(pow(X_goal - Xbs, 2) + pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2));
+
+            X_goal = Xbs + legLen_over_mag * (X_goal - Xbs);
+            Y_goal = Ybs + legLen_over_mag * (Y_goal - Ybs);
+            Z_goal = Zbs + legLen_over_mag * (Z_goal - Zbs);
+
+            D = ((pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2) + pow(X_goal - Xbs, 2)) - (pow(Ysl, 2) + pow(Xlf, 2) + pow(Xfp, 2))) / (2 * Xlf * Xfp);
+            
+            thetaS = -atan2(-(Z_goal - Zbs), (Y_goal - Ybs)) + atan2(sqrt(pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2) - pow(Ysl, 2)), Ysl);
+            thetaF = atan2(sqrt(1 - pow(D, 2)), D);
+            thetaL = atan2((X_goal - Xbs), sqrt(pow(Y_goal - Ybs, 2) + pow(Z_goal - Zbs, 2) - pow(Ysl, 2))) - atan2(Xfp * sin(thetaF), Xlf + Xfp * cos(thetaF));
+        }
+
     }
     
     thetaS = thetaS*(180.0/PI);
@@ -43,7 +78,7 @@ void Palm::ikCalc(float goalVector[3], float thetas_array[3])
     thetas_array[1] = thetaL;
     thetas_array[2] = thetaF;
     
-    // Serial.println(String("S: ")+String(thetaS)+String("\tL: ")+String(thetaL)+String("\tF: ")+String(thetaF));
+    Serial.println(String("")+String(thetaS)+String(",")+String(thetaL)+String(",")+String(thetaF));
     
 
     // return {thetaS, thetaL, thetaF};
@@ -394,7 +429,7 @@ GaitManager::GaitManager(float leg_Xf,   float leg_Xb,  float leg_Y,     float z
 }
 
 
-void GaitManager::update_commands(float vx_vy_wz_[3], float rpy1_[3], float rpy2_[3], float trans_xyz_[3])
+void GaitManager::update_commands(float vx_vy_wz_[3], float rpy1_[3], float rpy2_[3], float trans_xyz_[3], float z_via_)
 {
     vx_vy_wz[0] = vx_vy_wz_[0];
     vx_vy_wz[1] = vx_vy_wz_[1];
@@ -411,6 +446,7 @@ void GaitManager::update_commands(float vx_vy_wz_[3], float rpy1_[3], float rpy2
     x_position = trans_xyz_[0];
     y_position = trans_xyz_[1];
     z_height   = trans_xyz_[2];
+    z_via = z_via_;
     
 }
 
@@ -478,8 +514,9 @@ void GaitManager::publishing_routine(float xyz_cmd_array[4][3])
             legs_speeds[i],         // speed
             0.85,                   // stance_ratio = 0.85
             phase_shift[i],         // phase_shift = 0
-            0.2,                    // z_via = 0.2
-            4.0,                    // curve_width_ratio = 1.0
+            // 0.2,                    // z_via = 0.2
+            z_via,                     // z_via = 0.2
+            1.0,                    // curve_width_ratio = 1.0
             0.0,                    // penetration_depth = 0
             legs_curves_radii[i],   // curving_radius = 1000
             legs_thetas[i],         // rotation_angle = 0
@@ -493,6 +530,10 @@ void GaitManager::publishing_routine(float xyz_cmd_array[4][3])
 
     t += (millis() - prev_instance) / 1000.0 / total_step_time;
     if (t > 1) t = 0;
+    
+    if(t<=0.1 || t>=0.9){ Serial.println("t:    ");   Serial.println(t);}
+    
+    
     prev_instance = millis();
 
     for (int i = 0; i < palms_cmd.rows(); ++i) {
