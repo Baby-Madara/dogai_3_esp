@@ -13,6 +13,8 @@
 //////////////////////////////////////////////////// Matrices Funcs////////////////////////////////////////////////////
 
 
+
+
 void matrixMultiplier(double  m1[4][4], double  m2[4][4], double mResult[4][4])
 {
 	int i, j, k;
@@ -229,6 +231,24 @@ Quaternion_ Quaternion_::operator*(double scalar) const {
 }
 
 
+Eigen::Matrix3f Quaternion_::toMatrix3f() const
+{
+    Eigen::Matrix3f mat;
+    mat << 1 - 2*y*y - 2*z*z, 2*x*y - 2*z*w,     2*x*z + 2*y*w,
+            2*x*y + 2*z*w,     1 - 2*x*x - 2*z*z, 2*y*z - 2*x*w,
+            2*x*z - 2*y*w,     2*y*z + 2*x*w,     1 - 2*x*x - 2*y*y;
+    return mat;
+}
+
+Eigen::Matrix4f Quaternion_::toMatrix4f() const
+{
+    Eigen::Matrix4f mat;
+    mat <<  1 - 2*y*y - 2*z*z,   2*x*y - 2*z*w,         2*x*z + 2*y*w,          0,
+            2*x*y + 2*z*w,       1 - 2*x*x - 2*z*z,     2*y*z - 2*x*w,          0,
+            2*x*z - 2*y*w,       2*y*z + 2*x*w,         1 - 2*x*x - 2*y*y,      0,
+            0,                   0,                     0,                      1;
+    return mat;
+}
 
 
 

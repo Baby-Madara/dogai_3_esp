@@ -100,10 +100,11 @@ extern Quaternion_ alphaQuaternion;
 extern Quaternion_ accelQuaternion;
 
 
+extern float pos_x, pos_y, pos_z;
 
 
 
-extern double palmStates[4];
+extern int palmStates[4];
 extern double jointStates[14];
 extern double jointCmd[14];
 extern int servoPinList[14];

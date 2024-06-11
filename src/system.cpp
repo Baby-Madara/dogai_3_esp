@@ -1,6 +1,8 @@
 #include <system.h>
 #include <robotics_math.h>
 #include <ArduinoJson.h>
+#include <leg_odometry.h>
+#include <Wire.h>
 
 TwoWire servoDriverWire = TwoWire(1); // Use I2C bus 0
 Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40, servoDriverWire);
@@ -400,7 +402,7 @@ void webSocketEventPython(uint8_t num, WStype_t type, uint8_t *payload, size_t l
 
 // SemaphoreHandle_t gaitMutex;
 
-GaitManager gaitManager; //  = GaitManager();
+GaitManager gaitManager(palmStates, 2.5, 40); //  = GaitManager();
 
 
 float vx_vy_wz      [3] = {0};
@@ -482,6 +484,27 @@ Palm palms_ik[4] = {
     Palm( -Xbs,   -Ybs,      Zbs,    Ysl,     Xlf,               Xfp),
     Palm( -Xbs,    Ybs,      Zbs,   -Ysl,     Xlf,               Xfp)
 };
+
+
+Pybullet_Interface leg_odometer;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 /////////////////////////////////////////////      RTOS     /////////////////////////////////////////////
@@ -710,7 +733,7 @@ void Task3_gait_IK(void *pvParameters)
         // ik (in degrees)
         for (int i = 0; i < 4; i++)
         {   
-            Serial.print(legs_names[i]);
+            // Serial.print(legs_names[i]);
             palms_ik[i].ikCalc(xyz_cmd_array[i], theta_cmd_array[i]);
         }
         Serial.println("");
@@ -744,12 +767,21 @@ void Task4_observer(void *pvParameters)
     // loop:
     while (1)
     {
+        for (int i = 0; i < 12; i++)
+        {
+            jointStates[i] = joints[i].readAngle()*(M_PI/180.0);
+        
+        }
         try
         {
             // myMPU.updateOrientation();
             // OrientationQuaternion = myMPU.getOrientationQuaternion();
         }
         catch(...){        }
+        
+        // jointStates done  -  IMU done  -  palmStates done before    --> odometry
+        leg_odometer.publish_transform_odometry(jointStates, palmStates, pos_x, pos_y, pos_z, OrientationQuaternion.w, OrientationQuaternion.x, OrientationQuaternion.y, OrientationQuaternion.z);
+        Serial.println(String("x: ") + String(pos_x) + String("y: ") + String(pos_y) + String("z: ") + String(pos_z));
         vTaskDelay(10);
     }
 }
@@ -871,7 +903,10 @@ Quaternion_ OmegaQuaternion;
 Quaternion_ alphaQuaternion;
 Quaternion_ accelQuaternion;
 
-double palmStates[4] = {0, 0, 0, 0};
+
+float pos_x, pos_y, pos_z;
+
+int palmStates[4] = {0, 0, 0, 0};
 
 double jointStates[14] = {
     0.001, 0.002, 0.003,

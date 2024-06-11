@@ -78,7 +78,7 @@ void Palm::ikCalc(float goalVector[3], float thetas_array[3])
     thetas_array[1] = thetaL;
     thetas_array[2] = thetaF;
     
-    Serial.println(String("")+String(thetaS)+String(",")+String(thetaL)+String(",")+String(thetaF));
+    // Serial.println(String("")+String(thetaS)+String(",")+String(thetaL)+String(",")+String(thetaF));
     
 
     // return {thetaS, thetaL, thetaF};
@@ -412,7 +412,7 @@ std::pair<Matrix<float, 3, 1>, bool> compound_bezier(
 ///////////////////////////////// gait manager //////////////////////////////////////////
 
 
-GaitManager::GaitManager(float leg_Xf,   float leg_Xb,  float leg_Y,     float z_height,            float total_step_time,         float publish_freq)
+GaitManager::GaitManager(int is_stance_global_[4],            float total_step_time,         float publish_freq, float leg_Xf,   float leg_Xb,  float leg_Y,     float z_height)
                     :   leg_Xf(leg_Xf), leg_Xb(leg_Xb), leg_Y(leg_Y), z_height(z_height), total_step_time(total_step_time), publish_freq(publish_freq), t(0), x_position(0), y_position(0), prev_instance(0) 
 {
     publish_interval        = 1.0 / publish_freq;
@@ -426,6 +426,7 @@ GaitManager::GaitManager(float leg_Xf,   float leg_Xb,  float leg_Y,     float z
     legs_Xf_Xb_Y            = Vector3f(leg_Xf, leg_Xb, leg_Y);
     gait_center             = Vector3f(x_position, y_position, z_height);
     is_stance               = Vector4i::Zero();
+    is_stance_global        = is_stance_global_;
 }
 
 
@@ -527,11 +528,14 @@ void GaitManager::publishing_routine(float xyz_cmd_array[4][3])
         is_stance[i] = result.second;
         palms_cmd.row(i) = (tf_bg * tf_gi_tr[i] * p_i_out.homogeneous()).head<3>();
     }
+    for (int i = 0; i < 4; i++)
+    {   is_stance_global[i] = is_stance[i];    }
+    
 
     t += (millis() - prev_instance) / 1000.0 / total_step_time;
     if (t > 1) t = 0;
     
-    if(t<=0.1 || t>=0.9){ Serial.println("t:    ");   Serial.println(t);}
+    // if(t<=0.1 || t>=0.9){ Serial.println("t:    ");   Serial.println(t);}
     
     
     prev_instance = millis();

@@ -8,6 +8,13 @@
 
 #include <utilities.h>
 
+#include <iostream>
+#include <cmath>
+#include <vector>
+#include <utility>
+#include <stdexcept>
+#include <array>
+#include <ArduinoEigenDense.h>
 
 
 
@@ -31,6 +38,8 @@ public:
     Quaternion_ operator%(const Quaternion_ &q) const;
     Quaternion_ operator+(const Quaternion_ &q) const;
     Quaternion_ operator*(double scalar) const;
+    Eigen::Matrix3f toMatrix3f() const;
+    Eigen::Matrix4f toMatrix4f() const;
 };
 
 

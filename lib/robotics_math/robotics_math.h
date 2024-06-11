@@ -129,6 +129,7 @@ private:
     MatrixXf palms_cmd;
     Vector3f vx_vy_wz, horizontal_rotation_rpy, inclined_rotation_rpy, legs_Xf_Xb_Y, gait_center;
     Vector4i is_stance;
+    int   *is_stance_global;
     unsigned long prev_instance;
 
 public:
@@ -139,7 +140,7 @@ public:
 
 
 
-    GaitManager(float leg_Xf = 0.2044, float leg_Xb = -0.2044, float leg_Y = 0.171, float z_height = 0.3, float total_step_time = 2.5, float publish_freq = 40);
+    GaitManager(int is_stance_global_[4]=NULL, float total_step_time = 2.5, float publish_freq = 40, float leg_Xf = 0.2044, float leg_Xb = -0.2044, float leg_Y = 0.171, float z_height = 0.3);
     void publishing_routine(float xyz_cmd_array[4][3]);
     void loop(float xyz_cmd_array[4][3]);
     void update_commands(float vx_vy_wz_[3], float rpy1_[3], float rpy2_[3], float trans_xyz_[3], float z_via_);
