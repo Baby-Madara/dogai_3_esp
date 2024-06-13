@@ -402,7 +402,7 @@ void webSocketEventPython(uint8_t num, WStype_t type, uint8_t *payload, size_t l
 
 // SemaphoreHandle_t gaitMutex;
 
-GaitManager gaitManager(palmStates, 2.5, 40); //  = GaitManager();
+GaitManager gaitManager(palmStates, 2.0, 100.0); //  = GaitManager();
 
 
 float vx_vy_wz      [3] = {0};
@@ -431,7 +431,7 @@ void parseJsonData(char *jsonString)
     float R2    = MAP(extractValue(jsonString, "\"R2\""), 0, 100.0, 0, 0.6);
     float P2    = MAP(extractValue(jsonString, "\"P2\""), 0, 100.0, 0, 0.6);
     float Y2    = MAP(extractValue(jsonString, "\"Y2\""), 0, 100.0, 0, 0.6);
-    float X     = MAP(extractValue(jsonString, "\"X\""), 0, 100.0, 0.0, 0.15) + 0.05;
+    float X     = MAP(extractValue(jsonString, "\"X\""), 0, 100.0, 0.0, 0.15) + 0.02;
     float Y     = MAP(extractValue(jsonString, "\"Y\""), 0, 100.0, 0.0, 0.15); 
     float Z     = MAP(extractValue(jsonString, "\"Z\""), 0, 100.0, 0.0, 0.15) + 0.2;
     
@@ -679,9 +679,18 @@ void Task1_WiFi_comm(void *pvParameters)
     {
 
         // Handle WebSocket communication
-        server.handleClient();
-        webSocketPhone.loop();
-        webSocketPython.loop();
+        try{
+            server.handleClient();
+        }
+        catch(...){            Serial.println("catch: server");                 }
+        try{
+            webSocketPhone.loop();
+        }
+        catch(...){            Serial.println("catch: webSocketPhone");         }
+        try{
+            webSocketPython.loop();
+        }
+        catch(...){            Serial.println("catch: webSocketPython");        }
         ArduinoOTA.handle();
         vTaskDelay(1);
     }
@@ -716,7 +725,8 @@ void Task3_gait_IK(void *pvParameters)
         joints[servo_num].writeAngleDirect(jointDefault[servo_num]);
     }
     
-    
+    double lastTime_ = micros();
+    double duration = 0;
     // loop:
     while (1)
     {
@@ -736,7 +746,11 @@ void Task3_gait_IK(void *pvParameters)
             // Serial.print(legs_names[i]);
             palms_ik[i].ikCalc(xyz_cmd_array[i], theta_cmd_array[i]);
         }
-        Serial.println("");
+        // Serial.println("");
+        // duration = micros() - lastTime_;
+        // lastTime_ = micros();
+        // Serial.println(String("micros: ") + String(micros()) + String(" duration in us: ")+ String(duration));
+        // Serial.println("");
         
         // vTaskDelay(10);
         
@@ -781,7 +795,7 @@ void Task4_observer(void *pvParameters)
         
         // jointStates done  -  IMU done  -  palmStates done before    --> odometry
         leg_odometer.publish_transform_odometry(jointStates, palmStates, pos_x, pos_y, pos_z, OrientationQuaternion.w, OrientationQuaternion.x, OrientationQuaternion.y, OrientationQuaternion.z);
-        Serial.println(String("x: ") + String(pos_x) + String("y: ") + String(pos_y) + String("z: ") + String(pos_z));
+        // Serial.println(String("x: ") + String(pos_x) + String("y: ") + String(pos_y) + String("z: ") + String(pos_z));
         vTaskDelay(10);
     }
 }
@@ -967,20 +981,11 @@ double jointDirList[14] = {-1, 1, 1, -1, -1, -1, 1, 1, 1, 1, -1, -1, 1, -1};
 #else
 
 double jointDirList[14] = {
-    1,
-    1,
-    -2 / 3.0,
-    1,
-    -1,
-    2 / 3.0,
-    -1,
-    1,
-    -2 / 3.0,
-    -1,
-    -1,
-    2 / 3.0,
-    1,
-    -1,
+    1,    1,    -2 / 3.0,
+    1,    -1,    2 / 3.0,
+    -1,    1,    -2 / 3.0,
+    -1,    -1,    2 / 3.0,
+    1,    -1,
 };
 
 double jointOffsetList[14] = {

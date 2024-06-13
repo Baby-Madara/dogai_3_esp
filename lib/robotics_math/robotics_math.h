@@ -86,19 +86,22 @@ std::pair<Matrix<float, 3, 1>, bool> compound_bezier(
     float rotation_angle = 0,
     float distance_shift = 0
 );
-// std::pair<Matrix<float, 3, 1>, bool> compound_bezier(
-//     float t, 
-//     float step_time_quarter, 
-//     float speed, 
-//     float terminating_stance_to_q_step_ratio = 0.2, 
-//     float phase_shift = 0, 
-//     float z_via = 0.2, 
-//     float curving_radius = 1000, 
-//     float swing_curving_to_ssq_ratio = 1, 
-//     float penetration_depth = 0, 
-//     float rotation_angle = 0, 
-//     bool smooth = false
-// );
+
+
+std::pair<Matrix<float, 3, 1>, bool> compound_bezier(
+    float t, 
+    float step_time_quarter, 
+    float speed, 
+    float terminating_stance_to_q_step_ratio = 0.2, 
+    float phase_shift = 0, 
+    float z_via = 0.2, 
+    float curving_radius = 1000, 
+    float swing_curving_to_ssq_ratio = 1, 
+    float penetration_depth = 0, 
+    float rotation_angle = 0, 
+    bool smooth = false,
+    String version = "old"
+);
 
 
 
