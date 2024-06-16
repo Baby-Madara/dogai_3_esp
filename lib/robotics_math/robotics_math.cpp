@@ -78,8 +78,9 @@ void Palm::ikCalc(float goalVector[3], float thetas_array[3])
     thetas_array[1] = thetaL;
     thetas_array[2] = thetaF;
     
-    // Serial.println(String("")+String(thetaS)+String(",")+String(thetaL)+String(",")+String(thetaF));
-    
+    #ifdef PRINT_ANGLES
+    Serial.println(String("")+String(thetaS)+String(",")+String(thetaL)+String(",")+String(thetaF));
+    #endif
 
     // return {thetaS, thetaL, thetaF};
 }
@@ -513,7 +514,7 @@ void GaitManager::publishing_routine(float xyz_cmd_array[4][3])
             t,                              // float t
             total_step_time / 4.0,          // float step_time_quarter
             legs_speeds[i],                 // float speed
-            0.3,                            // float terminating_stance_to_q_step_ratio = 0.2
+            0.2,                            // float terminating_stance_to_q_step_ratio = 0.2
             phase_shift[i],                 // float phase_shift = 0
             0.1,                            // float z_via = 0.2
             legs_curves_radii[i],           // float curving_radius = 1000

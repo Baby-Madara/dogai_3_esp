@@ -7,6 +7,7 @@
 // for the old dog, else, must be commented
 // #define OLD_DOG
 
+// #define PRINT_ANGLES
 
 #define MAP(_val, _oldL, _oldH, _newL, _newH)	( ((double)_newH - _newL)*((double)_val - _oldL)/( (double)_oldH - _oldL) + _newL )
 #define M_G 9.806

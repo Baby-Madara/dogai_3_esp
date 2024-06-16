@@ -422,8 +422,8 @@ void parseJsonData(char *jsonString)
         return 0;
     };
     // Extract values and save them into variables
-    float vx    = MAP(extractValue(jsonString, "\"vx\""), 0, 100.0, 0.0, 0.15);
-    float vy    = MAP(extractValue(jsonString, "\"vy\""), 0, 100.0, 0.0, 0.15);
+    float vx    = MAP(extractValue(jsonString, "\"vx\""), 0, 100.0, 0.0, 0.1);
+    float vy    = MAP(extractValue(jsonString, "\"vy\""), 0, 100.0, 0.0, 0.1);
     float vz    = MAP(extractValue(jsonString, "\"vz\""), 0, 100.0, 0.0, 0.15);
     float R1    = MAP(extractValue(jsonString, "\"R1\""), 0, 100.0, 0, 0.6);
     float P1    = MAP(extractValue(jsonString, "\"P1\""), 0, 100.0, 0, 0.6);
@@ -431,8 +431,8 @@ void parseJsonData(char *jsonString)
     float R2    = MAP(extractValue(jsonString, "\"R2\""), 0, 100.0, 0, 0.6);
     float P2    = MAP(extractValue(jsonString, "\"P2\""), 0, 100.0, 0, 0.6);
     float Y2    = MAP(extractValue(jsonString, "\"Y2\""), 0, 100.0, 0, 0.6);
-    float X     = MAP(extractValue(jsonString, "\"X\""), 0, 100.0, 0.0, 0.15) + 0.02;
-    float Y     = MAP(extractValue(jsonString, "\"Y\""), 0, 100.0, 0.0, 0.15); 
+    float X     = MAP(extractValue(jsonString, "\"X\""), 0, 100.0, 0.0, 0.1) + 0.00;
+    float Y     = MAP(extractValue(jsonString, "\"Y\""), 0, 100.0, 0.0, 0.1); 
     float Z     = MAP(extractValue(jsonString, "\"Z\""), 0, 100.0, 0.0, 0.15) + 0.2;
     
     float z_via = 0;
@@ -743,14 +743,18 @@ void Task3_gait_IK(void *pvParameters)
         // ik (in degrees)
         for (int i = 0; i < 4; i++)
         {   
-            // Serial.print(legs_names[i]);
+            #ifdef PRINT_ANGLES
+            Serial.print(legs_names[i]);
+            #endif
             palms_ik[i].ikCalc(xyz_cmd_array[i], theta_cmd_array[i]);
         }
-        // Serial.println("");
-        // duration = micros() - lastTime_;
-        // lastTime_ = micros();
-        // Serial.println(String("micros: ") + String(micros()) + String(" duration in us: ")+ String(duration));
-        // Serial.println("");
+        #ifdef PRINT_ANGLES
+        Serial.println("");
+        duration = micros() - lastTime_;
+        lastTime_ = micros();
+        Serial.println(String("micros: ") + String(micros()) + String(" duration in us: ")+ String(duration));
+        Serial.println("");
+        #endif
         
         // vTaskDelay(10);
         
