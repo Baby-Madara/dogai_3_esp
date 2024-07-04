@@ -456,7 +456,11 @@ void GaitManager::update_commands(float vx_vy_wz_[3], float rpy1_[3], float rpy2
 
 void GaitManager::publishing_routine(float xyz_cmd_array[4][3])
 {
-    float phase_shift[] = {0.75, 0.25, 0.0, 0.5};
+    float phase_shift[] = {0.75, 0.25, 0.0, 0.5};   //last working
+    // float phase_shift[] = {0.0, 0.5, 0.75, 0.25};   //af
+    // float phase_shift[] = {0.0, 0.5, -0.75, -0.25}; //maro
+    // float phase_shift[] = {0.75, 0.25, 0.0, 0.2}; //maro
+    
 
     // Transformation matrices for the robot
     Matrix4f tf_gb_tr             = translation_matrix(x_position, y_position, z_height);

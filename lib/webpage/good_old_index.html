@@ -1,0 +1,476 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+  <title>Doggo</title>
+  <style>
+    body { 
+      font-family: Arial, sans-serif; 
+      text-align: center; 
+      display: grid;
+      grid-template-rows: auto auto auto auto auto auto auto;
+      gap: 20px;
+      padding: 20px;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .grid-container {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr;
+      align-items: center;
+      place-items: center;
+      gap: 20px;
+    }
+    img { 
+      justify-self: center;
+      align-self: center;
+      margin: 0 auto; 
+      grid-column: span 3;
+    }
+    .joystick { 
+      margin: 0 auto; 
+      display: inline-block; 
+      width: 200px; 
+      height: 200px; 
+      background: #ccc; 
+      position: relative; 
+      border-radius: 50%; 
+      touch-action: none; 
+    }
+    .joystick .stick { 
+      width: 80px; 
+      height: 80px; 
+      background: #888; 
+      border-radius: 50%; 
+      position: absolute; 
+      left: 50%; 
+      top: 50%; 
+      transform: translate(-50%, -50%); 
+      touch-action: none; 
+    }
+    .slider-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .slider input[type="range"] { 
+      width: 100%; 
+      height: 50px;
+      transform: translateX(-50%);
+    }
+    .slider button {
+      margin-top: 10px;
+      padding: 5px 10px;
+      font-size: 16px;
+    }
+    .log { 
+      margin: 0 auto; 
+      border: 1px solid #ccc; 
+      padding: 10px; 
+      text-align: left;
+      grid-column: span 3;
+    }
+    .log table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .log th, .log td {
+      border: 1px solid #ccc;
+      padding: 5px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .title, .image, .data, .velocities, .rpy1, .rpy2, .xyz {
+      grid-column: span 3;
+    }
+  </style>
+  <script>
+
+
+    var logData = {
+      vx: 0, vy: 0, vz: 0,
+      R1: 0, P1: 0, Y1: 0,
+      R2: 0, P2: 0, Y2: 0,
+      X: 0, Y: 0, Z: 0
+    };
+
+    function sendLogData() {
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", "/logdata", true);
+      xhr.setRequestHeader("Content-Type", "application/json;charset=UTF-8");
+      xhr.send(JSON.stringify(logData));
+    }
+
+    function init() {
+      console.log("loaded");
+
+      const joysticks = document.querySelectorAll('.joystick');
+      joysticks.forEach((joystick, index) => {
+        const stick = joystick.querySelector('.stick');
+        const joystickRect = joystick.getBoundingClientRect();
+        const maxRadius = joystick.offsetWidth / 2 - stick.offsetWidth / 2;
+
+        function handleJoystickMove(event) {
+          event.preventDefault();
+          const touch = event.touches ? event.touches[0] : event;
+          const x = touch.clientX - joystickRect.left - joystick.offsetWidth / 2;
+          const y = touch.clientY - joystickRect.top - joystick.offsetHeight / 2;
+          const distance = Math.min(Math.sqrt(x * x + y * y), maxRadius);
+          const angle = Math.atan2(y, x);
+
+          const offsetX = Math.cos(angle) * distance;
+          const offsetY = Math.sin(angle) * distance;
+
+          stick.style.transform = `translate(calc(${offsetX}px - 50%), calc(${offsetY}px - 50%))`;
+
+          updateLogData(index + 1, offsetY * (-20.0 / 12.0), offsetX * (-20.0 / 12.0));
+        }
+
+        function resetJoystick() {
+          stick.style.transform = 'translate(-50%, -50%)';
+          updateLogData(index + 1, 0, 0);
+        }
+
+        joystick.addEventListener('mousedown', (event) => {
+          document.addEventListener('mousemove', handleJoystickMove);
+          document.addEventListener('mouseup', () => {
+            document.removeEventListener('mousemove', handleJoystickMove);
+            resetJoystick();
+          });
+        });
+
+        joystick.addEventListener('touchstart', (event) => {
+          document.addEventListener('touchmove', handleJoystickMove);
+          document.addEventListener('touchend', () => {
+            document.removeEventListener('touchmove', handleJoystickMove);
+            resetJoystick();
+          });
+        });
+      });
+
+      const sliders = document.querySelectorAll('.slider input[type="range"]');
+      sliders.forEach((slider, index) => {
+        slider.addEventListener('input', () => {
+          sendSliderData(index + 1, parseFloat(slider.value));
+        });
+
+        const button = slider.nextElementSibling;
+        button.addEventListener('click', () => {
+          slider.value = 0;
+          sendSliderData(index + 1, 0);
+        });
+      });
+      setInterval(sendLogData, 150);
+    }
+
+    function updateLogData(joystickIndex, x, y) {
+      switch (joystickIndex) {
+        case 1:
+          logData.vx = x.toFixed(2); //.toFixed(3);
+          logData.vy = y.toFixed(2); //.toFixed(3);
+          break;
+        case 2:
+          logData.R1 = x.toFixed(2); //.toFixed(3);
+          logData.P1 = y.toFixed(2); //.toFixed(3);
+          break;
+        case 3:
+          logData.R2 = x.toFixed(2); //.toFixed(3);
+          logData.P2 = y.toFixed(2); //.toFixed(3);
+          break;
+        case 4:
+          logData.X = x.toFixed(2); //.toFixed(3);
+          logData.Y = y.toFixed(2); //.toFixed(3);
+          break;
+      }
+      updateLogDisplay();
+    }
+
+    function sendSliderData(id, value) {
+      switch (id) {
+        case 1:
+          logData.vz = value;
+          break;
+        case 2:
+          logData.Y1 = value;
+          break;
+        case 3:
+          logData.Y2 = value;
+          break;
+        case 4:
+          logData.Z = value;
+          break;
+      }
+      updateLogDisplay();
+    }
+
+    function updateLogDisplay() {
+      document.getElementById('vx').innerText = logData.vx.toFixed(2);
+      document.getElementById('vy').innerText = logData.vy.toFixed(2);
+      document.getElementById('vz').innerText = logData.vz.toFixed(2);
+      document.getElementById('R1').innerText = logData.R1.toFixed(2);
+      document.getElementById('P1').innerText = logData.P1.toFixed(2);
+      document.getElementById('Y1').innerText = logData.Y1.toFixed(2);
+      document.getElementById('R2').innerText = logData.R2.toFixed(2);
+      document.getElementById('P2').innerText = logData.P2.toFixed(2);
+      document.getElementById('Y2').innerText = logData.Y2.toFixed(2);
+      document.getElementById('X').innerText = logData.X.toFixed(2);
+      document.getElementById('Y').innerText = logData.Y.toFixed(2);
+      document.getElementById('Z').innerText = logData.Z.toFixed(2);
+    }
+
+    window.onload = init;
+
+
+
+
+
+
+
+
+
+
+
+    // var socket;
+    // var logData = {
+    //   vx: 0, vy: 0, vz: 0,
+    //   R1: 0, P1: 0, Y1: 0,
+    //   R2: 0, P2: 0, Y2: 0,
+    //   X: 0, Y: 0, Z: 0
+    // };
+
+    // function initWebSocket() {
+    //   socket = new WebSocket('ws://' + window.location.hostname + ':81');
+    //   socket.binaryType = 'arraybuffer';
+
+    //   socket.onopen = function() {
+    //     console.log('WebSocket connection established');
+    //   };
+
+    //   socket.onmessage = function(event) {
+    //     drawImage(new Uint8Array(event.data));
+    //   };
+
+    //   socket.onclose = function() {
+    //     console.log('WebSocket connection closed, attempting to reconnect in 1 second...');
+    //     setTimeout(initWebSocket, 1000);
+    //   };
+
+    //   socket.onerror = function(error) {
+    //     console.error('WebSocket error:', error);
+    //   };
+
+    //   setInterval(() => {
+    //     if (socket.readyState === WebSocket.OPEN) {
+    //       socket.send(JSON.stringify(logData));
+    //       console.log('hi');
+    //     }
+    //   }, 150);
+    // }
+
+    // function drawImage(byteArray) {
+    //   var canvas = document.getElementById('photoCanvas');
+    //   var ctx = canvas.getContext('2d');
+    //   var imageData = ctx.createImageData(50, 50);
+    //   for (var i = 0; i < byteArray.length; i++) {
+    //     var value = byteArray[i];
+    //     imageData.data[i * 4] = value;        // Red
+    //     imageData.data[i * 4 + 1] = value;    // Green
+    //     imageData.data[i * 4 + 2] = value;    // Blue
+    //     imageData.data[i * 4 + 3] = 255;      // Alpha
+    //   }
+    //   ctx.putImageData(imageData, 0, 0);
+    // }
+
+    // function init() {
+    //   console.log("loaded");
+    //   initWebSocket();
+
+    //   const joysticks = document.querySelectorAll('.joystick');
+    //   joysticks.forEach((joystick, index) => {
+    //     const stick = joystick.querySelector('.stick');
+    //     const joystickRect = joystick.getBoundingClientRect();
+    //     const maxRadius = joystick.offsetWidth / 2 - stick.offsetWidth / 2;
+
+    //     function handleJoystickMove(event) {
+    //       event.preventDefault();
+    //       const touch = event.touches ? event.touches[0] : event;
+    //       const x = touch.clientX - joystickRect.left - joystick.offsetWidth / 2;
+    //       const y = touch.clientY - joystickRect.top - joystick.offsetHeight / 2;
+    //       const distance = Math.min(Math.sqrt(x * x + y * y), maxRadius);
+    //       const angle = Math.atan2(y, x);
+
+    //       const offsetX = Math.cos(angle) * distance;
+    //       const offsetY = Math.sin(angle) * distance;
+
+    //       stick.style.transform = `translate(calc(${offsetX}px - 50%), calc(${offsetY}px - 50%))`;
+
+    //       updateLogData(index + 1, offsetY * (-20.0 / 12.0), offsetX * (-20.0 / 12.0));
+    //     }
+
+    //     function resetJoystick() {
+    //       stick.style.transform = 'translate(-50%, -50%)';
+    //       updateLogData(index + 1, 0, 0);
+    //     }
+
+    //     joystick.addEventListener('mousedown', (event) => {
+    //       document.addEventListener('mousemove', handleJoystickMove);
+    //       document.addEventListener('mouseup', () => {
+    //         document.removeEventListener('mousemove', handleJoystickMove);
+    //         resetJoystick();
+    //       });
+    //     });
+
+    //     joystick.addEventListener('touchstart', (event) => {
+    //       document.addEventListener('touchmove', handleJoystickMove);
+    //       document.addEventListener('touchend', () => {
+    //         document.removeEventListener('touchmove', handleJoystickMove);
+    //         resetJoystick();
+    //       });
+    //     });
+    //   });
+
+    //   const sliders = document.querySelectorAll('.slider input[type="range"]');
+    //   sliders.forEach((slider, index) => {
+    //     slider.addEventListener('input', () => {
+    //       sendSliderData(index + 1, parseFloat(slider.value));
+    //     });
+
+    //     const button = slider.nextElementSibling;
+    //     button.addEventListener('click', () => {
+    //       slider.value = 0;
+    //       sendSliderData(index + 1, 0);
+    //     });
+    //   });
+    // }
+
+    // function updateLogData(joystickIndex, x, y) {
+    //   switch (joystickIndex) {
+    //     case 1:
+    //       logData.vx = x; //.toFixed(3);
+    //       logData.vy = y; //.toFixed(3);
+    //       break;
+    //     case 2:
+    //       logData.R1 = x; //.toFixed(3);
+    //       logData.P1 = y; //.toFixed(3);
+    //       break;
+    //     case 3:
+    //       logData.R2 = x; //.toFixed(3);
+    //       logData.P2 = y; //.toFixed(3);
+    //       break;
+    //     case 4:
+    //       logData.X = x; //.toFixed(3);
+    //       logData.Y = y; //.toFixed(3);
+    //       break;
+    //   }
+    //   updateLogDisplay();
+    // }
+
+    // function sendSliderData(id, value) {
+    //   switch (id) {
+    //     case 1:
+    //       logData.vz = value;
+    //       break;
+    //     case 2:
+    //       logData.Y1 = value;
+    //       break;
+    //     case 3:
+    //       logData.Y2 = value;
+    //       break;
+    //     case 4:
+    //       logData.Z = value;
+    //       break;
+    //   }
+    //   updateLogDisplay();
+    // }
+
+    // function updateLogDisplay() {
+    //   document.getElementById('vx').innerText = logData.vx.toFixed(2);
+    //   document.getElementById('vy').innerText = logData.vy.toFixed(2);
+    //   document.getElementById('vz').innerText = logData.vz.toFixed(2);
+    //   document.getElementById('R1').innerText = logData.R1.toFixed(2);
+    //   document.getElementById('P1').innerText = logData.P1.toFixed(2);
+    //   document.getElementById('Y1').innerText = logData.Y1.toFixed(2);
+    //   document.getElementById('R2').innerText = logData.R2.toFixed(2);
+    //   document.getElementById('P2').innerText = logData.P2.toFixed(2);
+    //   document.getElementById('Y2').innerText = logData.Y2.toFixed(2);
+    //   document.getElementById('X').innerText = logData.X.toFixed(2);
+    //   document.getElementById('Y').innerText = logData.Y.toFixed(2);
+    //   document.getElementById('Z').innerText = logData.Z.toFixed(2);
+    // }    
+    // document.addEventListener('DOMContentLoaded', init);
+  </script>
+</head>
+<body>
+  <h1 class="title">Doggo</h1>
+  <canvas id="photoCanvas" width="300" height="200" class="image"></canvas>
+  <div class="log data">
+    <table>
+      <tr>
+        <td>vx: <span id="vx">0</span></td>
+        <td>R1: <span id="R1">0</span></td>
+        <td>R2: <span id="R2">0</span></td>
+        <td>X: <span id="X">0</span></td>
+      </tr>
+      <tr>
+        <td>vy: <span id="vy">0</span></td>
+        <td>P1: <span id="P1">0</span></td>
+        <td>P2: <span id="P2">0</span></td>
+        <td>Y: <span id="Y">0</span></td>
+      </tr>
+      <tr>
+        <td>vz: <span id="vz">0</span></td>
+        <td>Y1: <span id="Y1">0</span></td>
+        <td>Y2: <span id="Y2">0</span></td>
+        <td>Z: <span id="Z">0</span></td>
+      </tr>
+    </table>
+  </div>
+  <div class="grid-container velocities">
+    <div class="joystick">
+      <div class="stick"></div>
+    </div>
+    <div>Velocities</div>
+    <div class="slider-container">
+      <div class="slider" id="slider1">
+        <input type="range" min="-100" max="100" value="0">
+        <button>Reset</button>
+      </div>
+    </div>
+  </div>
+  <div class="grid-container rpy1">
+    <div class="joystick">
+      <div class="stick"></div>
+    </div>
+    <div>RPY1</div>
+    <div class="slider-container">
+      <div class="slider" id="slider2">
+        <input type="range" min="-100" max="100" value="0">
+        <button>Reset</button>
+      </div>
+    </div>
+  </div>
+  <div class="grid-container rpy2">
+    <div class="joystick">
+      <div class="stick"></div>
+    </div>
+    <div>RPY2</div>
+    <div class="slider-container">
+      <div class="slider" id="slider3">
+        <input type="range" min="-100" max="100" value="0">
+        <button>Reset</button>
+      </div>
+    </div>
+  </div>
+  <div class="grid-container xyz">
+    <div class="joystick">
+      <div class="stick"></div>
+    </div>
+    <div>XYZ</div>
+    <div class="slider-container">
+      <div class="slider" id="slider4">
+        <input type="range" min="-100" max="100" value="0">
+        <button>Reset</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

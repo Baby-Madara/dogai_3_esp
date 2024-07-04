@@ -10,21 +10,21 @@ Adafruit_PWMServoDriver pwm = Adafruit_PWMServoDriver(0x40, servoDriverWire);
 /////////////////////////////////////// Webpage //////////////////////////////////////////////
 
 // Network credentials
-// const char *ssid = "Fr7oo";
+const char *ssid = "Fr7oo";
 const char *password = "25897463";
 
 // // Network credentials
-const char *ssid = "doggo";
+// const char *ssid = "knight";
 // const char *password = "19691974";
 
 // Static IP configuration
 IPAddress local_IP(
     192,
     168,
-    4,
-    1
+    1,
+    9    //9
 );
-IPAddress gateway(192, 168, 4, 1);
+IPAddress gateway(192, 168, 1, 1);
 IPAddress subnet(255, 255, 255, 0);
 // IPAddress dns(8, 8, 8, 8);
 IPAddress primaryDNS(8, 8, 8, 8);   // Optional
@@ -33,12 +33,11 @@ IPAddress secondaryDNS(8, 8, 4, 4); // Optional
 
 // Web server and WebSocket server
 WebServer server(80);
-WebSocketsServer webSocketPhone(81);
+// WebSocketsServer webSocketPhone(81);
 WebSocketsServer webSocketPython(82);
 
 
 void parseJsonData(char *jsonString);
-void parseJsonData(String jsonString);
 
 
 // HTML page (minified for brevity)
@@ -145,7 +144,6 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
     }
 
     function init() {
-    //   initWebSocket();
       console.log("loaded");
 
       const joysticks = document.querySelectorAll('.joystick');
@@ -210,20 +208,20 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
     function updateLogData(joystickIndex, x, y) {
       switch (joystickIndex) {
         case 1:
-          logData.vx = parseFloat(x.toFixed(2));
-          logData.vy = parseFloat(y.toFixed(2));
+          logData.vx = x.toFixed(2);
+          logData.vy = y.toFixed(2);
           break;
         case 2:
-          logData.R1 = parseFloat(x.toFixed(2));
-          logData.P1 = parseFloat(y.toFixed(2));
+          logData.R1 = x.toFixed(2);
+          logData.P1 = y.toFixed(2);
           break;
         case 3:
-          logData.R2 = parseFloat(x.toFixed(2));
-          logData.P2 = parseFloat(y.toFixed(2));
+          logData.R2 = x.toFixed(2);
+          logData.P2 = y.toFixed(2);
           break;
         case 4:
-          logData.X = parseFloat(x.toFixed(2));
-          logData.Y = parseFloat(y.toFixed(2));
+          logData.X = x.toFixed(2);
+          logData.Y = y.toFixed(2);
           break;
       }
       updateLogDisplay();
@@ -232,16 +230,16 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
     function sendSliderData(id, value) {
       switch (id) {
         case 1:
-          logData.vz = parseFloat(value);
+          logData.vz = value;
           break;
         case 2:
-          logData.Y1 = parseFloat(value);
+          logData.Y1 = value;
           break;
         case 3:
-          logData.Y2 = parseFloat(value);
+          logData.Y2 = value;
           break;
         case 4:
-          logData.Z = parseFloat(value);
+          logData.Z = value;
           break;
       }
       updateLogDisplay();
@@ -274,7 +272,7 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
 
 
 
-    var socket;
+    // var socket;
     // var logData = {
     //   vx: 0, vy: 0, vz: 0,
     //   R1: 0, P1: 0, Y1: 0,
@@ -282,26 +280,26 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
     //   X: 0, Y: 0, Z: 0
     // };
 
-    function initWebSocket() {
-      socket = new WebSocket('ws://' + window.location.hostname + ':81');
-      socket.binaryType = 'arraybuffer';
+    // function initWebSocket() {
+    //   socket = new WebSocket('ws://' + window.location.hostname + ':81');
+    //   socket.binaryType = 'arraybuffer';
 
-      socket.onopen = function() {
-        console.log('WebSocket connection established');
-      };
+    //   socket.onopen = function() {
+    //     console.log('WebSocket connection established');
+    //   };
 
-      socket.onmessage = function(event) {
-        drawImage(new Uint8Array(event.data));
-      };
+    //   socket.onmessage = function(event) {
+    //     drawImage(new Uint8Array(event.data));
+    //   };
 
-      socket.onclose = function() {
-        console.log('WebSocket connection closed, attempting to reconnect in 1 second...');
-        setTimeout(initWebSocket, 1000);
-      };
+    //   socket.onclose = function() {
+    //     console.log('WebSocket connection closed, attempting to reconnect in 1 second...');
+    //     setTimeout(initWebSocket, 1000);
+    //   };
 
-      socket.onerror = function(error) {
-        console.error('WebSocket error:', error);
-      };
+    //   socket.onerror = function(error) {
+    //     console.error('WebSocket error:', error);
+    //   };
 
     //   setInterval(() => {
     //     if (socket.readyState === WebSocket.OPEN) {
@@ -309,21 +307,21 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
     //       console.log('hi');
     //     }
     //   }, 150);
-    }
+    // }
 
-    function drawImage(byteArray) {
-      var canvas = document.getElementById('photoCanvas');
-      var ctx = canvas.getContext('2d');
-      var imageData = ctx.createImageData(50, 50);
-      for (var i = 0; i < byteArray.length; i++) {
-        var value = byteArray[i];
-        imageData.data[i * 4] = value;        // Red
-        imageData.data[i * 4 + 1] = value;    // Green
-        imageData.data[i * 4 + 2] = value;    // Blue
-        imageData.data[i * 4 + 3] = 255;      // Alpha
-      }
-      ctx.putImageData(imageData, 0, 0);
-    }
+    // function drawImage(byteArray) {
+    //   var canvas = document.getElementById('photoCanvas');
+    //   var ctx = canvas.getContext('2d');
+    //   var imageData = ctx.createImageData(50, 50);
+    //   for (var i = 0; i < byteArray.length; i++) {
+    //     var value = byteArray[i];
+    //     imageData.data[i * 4] = value;        // Red
+    //     imageData.data[i * 4 + 1] = value;    // Green
+    //     imageData.data[i * 4 + 2] = value;    // Blue
+    //     imageData.data[i * 4 + 3] = 255;      // Alpha
+    //   }
+    //   ctx.putImageData(imageData, 0, 0);
+    // }
 
     // function init() {
     //   console.log("loaded");
@@ -523,7 +521,7 @@ const char htmlPage[] PROGMEM = R"rawliteral(<!DOCTYPE HTML>
 
 void handleRoot()
 {
-    server.send(200, "text/html", htmlPage);
+    server.send_P(200, "text/html", htmlPage);
 }
 
 void webSocketEventPhone(uint8_t num, WStype_t type, uint8_t *payload, size_t length)
@@ -552,80 +550,13 @@ void webSocketEventPython(uint8_t num, WStype_t type, uint8_t *payload, size_t l
 
 // SemaphoreHandle_t gaitMutex;
 
-GaitManager gaitManager(palmStates, 2.0, 400.0); //  = GaitManager();
+GaitManager gaitManager(palmStates, 2.0, 100.0); //  = GaitManager();
 
 
 float vx_vy_wz      [3] = {0};
 float rpy1          [3] = {0};
 float rpy2          [3] = {0};
 float xyz_translate [3] = {0};
-
-
-void parseJsonData(String jsonString)
-{
-    Serial.println(String("\n---------------------\n") + jsonString);
-    // Helper function to extract a value from the JSON string
-    auto extractValue = [](String json, const char *key) -> float {
-        int startIndex = json.indexOf(key);
-        if (startIndex != -1) {
-            startIndex += strlen(key) + 1; // Skip key and ": "
-            int endIndex = json.indexOf(',', startIndex);
-            if (endIndex == -1) {
-                endIndex = json.indexOf('}', startIndex);
-            }
-            if (endIndex != -1) {
-                String valueString = json.substring(startIndex, endIndex);
-                return valueString.toFloat();
-            }
-        }
-        return 0;
-    };
-    
-    // Extract values and save them into variables
-    float vx    = MAP((float)extractValue(jsonString, "\"vx\""), 0.0,  100.0, 0.0, 0.1);
-    float vy    = MAP((float)extractValue(jsonString, "\"vy\""), 0.0,  100.0, 0.0, 0.1);
-    float vz    = MAP((float)extractValue(jsonString, "\"vz\""), 0.0, -100.0, 0.0, 0.15);
-    float R1    = MAP((float)extractValue(jsonString, "\"R1\""), 0.0,  100.0, 0.0, 0.6);
-    float P1    = MAP((float)extractValue(jsonString, "\"P1\""), 0.0,  100.0, 0.0, 0.6);
-    float Y1    = MAP((float)extractValue(jsonString, "\"Y1\""), 0.0, -100.0, 0.0, 0.6);
-    float R2    = MAP((float)extractValue(jsonString, "\"R2\""), 0.0,  100.0, 0.0, 0.6);
-    float P2    = MAP((float)extractValue(jsonString, "\"P2\""), 0.0,  100.0, 0.0, 0.6);
-    float Y2    = MAP((float)extractValue(jsonString, "\"Y2\""), 0.0, -100.0, 0.0, 0.6);
-    float X     = MAP((float)extractValue(jsonString, "\"X\""),  0.0,  100.0, 0.0, 0.1) + 0.00;
-    float Y     = MAP((float)extractValue(jsonString, "\"Y\""),  0.0,  100.0, 0.0, 0.1); 
-    float Z     = MAP((float)extractValue(jsonString, "\"Z\""),  0.0,  100.0, 0.0, 0.15) + 0.2;
-    
-    float z_via = 0;
-    // if (xSemaphoreTake(gaitMutex, 100) == pdTRUE)
-    {
-        
-        vx_vy_wz[0]      = vx ;
-        vx_vy_wz[1]      = vy ;
-        vx_vy_wz[2]      = vz ;
-        rpy1[0]          = R1 ;
-        rpy1[1]          = P1 ;
-        rpy1[2]          = Y1 ;
-        rpy2[0]          = R2 ;
-        rpy2[1]          = P2 ;
-        rpy2[2]          = Y2 ;
-        xyz_translate[0] = X  ;
-        xyz_translate[1] = Y  ;
-        xyz_translate[2] = Z  ;
-        z_via            = xyz_translate[2] * (2.0 / 3.0);
-        // z_via            = 0.2;
-        gaitManager.update_commands(vx_vy_wz, rpy1, rpy2, xyz_translate, z_via);
-        
-        // xSemaphoreGive(gaitMutex);
-    }
-    
-    // Print values to verify
-    Serial.println("");
-    Serial.printf("vx: %f, vy: %f, vz: %f\n", vx, vy, vz);
-    Serial.printf("R1: %f, P1: %f, Y1: %f\n", R1, P1, Y1);
-    Serial.printf("R2: %f, P2: %f, Y2: %f\n", R2, P2, Y2);
-    Serial.printf("X: %f, Y: %f, Z: %f\n", X, Y, Z);
-    Serial.println("");
-}
 
 void parseJsonData(char *jsonString)
 {
@@ -812,55 +743,44 @@ void Task1_WiFi_comm(void *pvParameters)
 {
 
     Serial.println("will try to start");
-    // // if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS))
+    // Configuring static IP
     // if (!WiFi.config(local_IP, gateway, subnet))
-    // {
-    //     Serial.println("STA Failed to configure");
-    // }
-    // WiFi.setHostname("doggo-ESP32s");
-    // Serial.println("WiFi configured.");
+    if (!WiFi.config(local_IP, gateway, subnet, primaryDNS, secondaryDNS))
+    {
+        Serial.println("STA Failed to configure");
+    }
+    WiFi.setHostname("doggo-ESP32s");
+    Serial.println("WiFi configured.");
+    // Enable IPv6
+    WiFi.enableIpV6();
+    Serial.print("IPv6: ");
+    Serial.println(WiFi.localIPv6());
 
-    // // Connecting to WiFi
-    // WiFi.begin(ssid, password);
-    // while (WiFi.status() != WL_CONNECTED)
-    // {
-    //     vTaskDelay(500);
-    //     Serial.print(".");
-    // }
-    // // Enable IPv6
-    // WiFi.enableIpV6();
-    // Serial.print("IPv6: ");
-    // Serial.println(WiFi.localIPv6());
-    
-    // Serial.println("WiFi connected.");
-    // Serial.print("IP address: ");
-    // Serial.println(WiFi.localIP());
+    // Connecting to WiFi
+    WiFi.begin(ssid, password);
+    while (WiFi.status() != WL_CONNECTED)
+    {
+        vTaskDelay(500);
+        Serial.print(".");
+    }
+    Serial.println("WiFi connected.");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
 
-
-
-
-
-
-    // Configuring the Access Point with a fixed IP address
-    if (!WiFi.softAPConfig(local_IP, gateway, subnet)) {
-        Serial.println("AP Config Failed");
+    // Start mDNS with the same hostname
+    if (!MDNS.begin("doggo-ESP32s"))
+    {
+        Serial.println("Error starting mDNS");
+    }
+    else
+    {
+        Serial.println("mDNS responder started");
     }
 
-    WiFi.softAP(ssid, password);
-    IPAddress IP = WiFi.softAPIP();
-    Serial.print("AP IP address: ");
-    Serial.println(IP);
-
-
-
-
-
-
-
-
+    
     // Starting the web server and WebSocket server
     server.on("/", HTTP_GET, handleRoot);
-    
+
     // Log data endpoint
     server.on("/logdata", HTTP_POST, []()
                     {
@@ -871,15 +791,16 @@ void Task1_WiFi_comm(void *pvParameters)
                             return;
                         }
                         String body = server.arg("plain");
-                        parseJsonData(body);
-                        // Serial.println("");
-                        // Serial.println(String("")+ String(body)); // Print received data
+                        Serial.println(body); // Print received data
                         // Here you can process the received JSON data as needed
                         server.send(200, "text/plain", "Data received"); 
 
                     });
     server.begin();
 
+    
+    
+    
     ArduinoOTA.onStart([]()
                     {
                         String type;
@@ -943,13 +864,28 @@ void Task1_WiFi_comm(void *pvParameters)
     {
 
         // Handle WebSocket communication
-        try{    server.handleClient();    }    catch(...){    Serial.println("catch: server");             }
-        // try{    webSocketPhone.loop();    }    catch(...){    Serial.println("catch: webSocketPhone");     }
-        try{    webSocketPython.loop();   }    catch(...){    Serial.println("catch: webSocketPython");    }
+        try{    server.handleClient();  }    catch(...){    Serial.println("catch: server");             }
+        // try{    webSocketPhone.loop();  }    catch(...){    Serial.println("catch: webSocketPhone");     }
+        try{    webSocketPython.loop(); }    catch(...){    Serial.println("catch: webSocketPython");    }
         ArduinoOTA.handle();
+        
+        
+        // Serial.println(WiFi.getHostname());
+        
         vTaskDelay(1);
     }
 }
+
+
+
+
+
+
+
+
+
+
+
 
 void Task2_controller(void *pvParameters)
 {
@@ -978,7 +914,6 @@ void Task3_gait_IK(void *pvParameters)
     for (int servo_num = 0; servo_num < 14; servo_num++)
     {
         joints[servo_num].writeAngleDirect(jointDefault[servo_num]);
-        // Serial.print(String(servo_num) + String(": ") + String(jointDefault[servo_num]));
     }
     
     double lastTime_ = micros();
@@ -1020,13 +955,13 @@ void Task3_gait_IK(void *pvParameters)
         {
             for (int joint_num = 0; joint_num < 3; joint_num++)
             {
-                // Serial.print(String(leg_num*3 + joint_num) + String(":") + String(theta_cmd_array[leg_num][joint_num]) + String(" | ")); // while no driver
-                joints[leg_num*3 + joint_num].writeAngleDirect(theta_cmd_array[leg_num][joint_num]);
-                // // Serial.print(theta_cmd_array[leg_num][joint_num] +  String("\t"));
+                // Serial.print(String(leg_num*3 + joint_num) + String(":") + String(theta_cmd_array[leg_num][joint_num]) + String(" | "));
+                // joints[leg_num*3 + joint_num].writeAngleDirect(theta_cmd_array[leg_num][joint_num]);
+                // Serial.print(theta_cmd_array[leg_num][joint_num] +  String("\t"));
             }
-            // vTaskDelay(10);
         }
-        // Serial.println(""); // while no driver
+        // Serial.println("");
+        vTaskDelay(1);
         
     }
 }
@@ -1106,8 +1041,8 @@ void Task6_LiDAR(void *pvParameters)
             }
         }
 
-        // Send the flat image data as a binary message
-        webSocketPhone.broadcastBIN(flatImage, 50 * 50);
+        // // Send the flat image data as a binary message
+        // webSocketPhone.broadcastBIN(flatImage, 50 * 50);
 
         // Delay before generating a new image
         vTaskDelay(100 / 6);
